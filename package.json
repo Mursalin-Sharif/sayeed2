@@ -10,7 +10,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "setup:supabase": "npx --yes tsx scripts/setup-supabase.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.112.3",

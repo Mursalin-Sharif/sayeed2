@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -21,7 +22,27 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem(KEY) === '1')
+  const [isAdmin, setIsAdmin] = useState(() => (!supabase ? localStorage.getItem(KEY) === '1' : false))
+
+  useEffect(() => {
+    if (!supabase) return
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        localStorage.setItem(KEY, '1')
+        setIsAdmin(true)
+      }
+    })
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session) {
+        localStorage.setItem(KEY, '1')
+        setIsAdmin(true)
+      } else {
+        localStorage.removeItem(KEY)
+        setIsAdmin(false)
+      }
+    })
+    return () => data.subscription.unsubscribe()
+  }, [])
 
   const login = useCallback(async (email: string, password: string) => {
     if (supabase) {

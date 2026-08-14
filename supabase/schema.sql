@@ -1,5 +1,6 @@
--- Harit Nursery — run this in the Supabase SQL editor
--- Then create a public Storage bucket named: media
+-- JS Agro Shop — run this in the Supabase SQL editor
+-- Dashboard: SQL Editor → New query → Run
+-- Then create a public Storage bucket named: media (the setup script also does this)
 
 create table if not exists products (
   id text primary key,
@@ -66,7 +67,7 @@ create table if not exists landing_content (
   payment_title text not null default '',
   payment_number text not null default '',
   payment_note text not null default '',
-  offer_product_id text not null default 'prod_offer_pack'
+  offer_product_id text not null default 'prod_papaya'
 );
 
 alter table products enable row level security;
@@ -75,15 +76,39 @@ alter table carousel_slides enable row level security;
 alter table landing_media enable row level security;
 alter table landing_content enable row level security;
 
+drop policy if exists "public read products" on products;
+drop policy if exists "public read slides" on carousel_slides;
+drop policy if exists "public read media" on landing_media;
+drop policy if exists "public read landing" on landing_content;
+drop policy if exists "public insert orders" on orders;
+drop policy if exists "public create orders" on orders;
+drop policy if exists "admin all products" on products;
+drop policy if exists "admin all orders" on orders;
+drop policy if exists "admin all slides" on carousel_slides;
+drop policy if exists "admin all media" on landing_media;
+drop policy if exists "admin all landing" on landing_content;
+
 create policy "public read products" on products for select using (true);
 create policy "public read slides" on carousel_slides for select using (true);
 create policy "public read media" on landing_media for select using (true);
 create policy "public read landing" on landing_content for select using (true);
-create policy "public insert orders" on orders for select using (true);
+create policy "public read orders" on orders for select using (true);
 create policy "public create orders" on orders for insert with check (true);
 
-create policy "admin all products" on products for all using (auth.role() = 'authenticated');
-create policy "admin all orders" on orders for all using (auth.role() = 'authenticated');
-create policy "admin all slides" on carousel_slides for all using (auth.role() = 'authenticated');
-create policy "admin all media" on landing_media for all using (auth.role() = 'authenticated');
-create policy "admin all landing" on landing_content for all using (auth.role() = 'authenticated');
+create policy "admin all products" on products for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "admin all orders" on orders for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "admin all slides" on carousel_slides for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "admin all media" on landing_media for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+create policy "admin all landing" on landing_content for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
+
+insert into storage.buckets (id, name, public)
+values ('media', 'media', true)
+on conflict (id) do update set public = true;
+
+drop policy if exists "public read media bucket" on storage.objects;
+drop policy if exists "auth upload media" on storage.objects;
+drop policy if exists "auth update media" on storage.objects;
+
+create policy "public read media bucket" on storage.objects for select using (bucket_id = 'media');
+create policy "auth upload media" on storage.objects for insert with check (bucket_id = 'media' and auth.role() = 'authenticated');
+create policy "auth update media" on storage.objects for update using (bucket_id = 'media' and auth.role() = 'authenticated');
