@@ -68,6 +68,7 @@ export const DISTRICTS = [
 export const SHIPPING = {
   district: { label: 'জেলা পর্যায়ে', fee: 250 },
   upazila: { label: 'উপজেলা পর্যায়ে', fee: 300 },
+  home: { label: 'হোম ডেলিভারি', fee: 500 },
 } as const
 
 export type ShippingType = keyof typeof SHIPPING

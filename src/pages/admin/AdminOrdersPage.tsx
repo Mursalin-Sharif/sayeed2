@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '@/context/StoreContext'
+import { SHIPPING } from '@/lib/districts'
 import type { OrderStatus } from '@/lib/types'
 import { confirmDelete, formatDate, formatTaka } from '@/lib/utils'
 
@@ -100,7 +101,7 @@ export function AdminOrdersPage() {
                 <p>
                   {order.address}, {order.district}
                 </p>
-                <p>Shipping: {order.shippingType === 'upazila' ? 'Upazila' : 'District'} ({formatTaka(order.shippingFee)})</p>
+                <p>Shipping: {SHIPPING[order.shippingType]?.label ?? order.shippingType} ({formatTaka(order.shippingFee)})</p>
                 {order.items.map((item) => (
                   <div key={item.productId} className="flex items-center gap-3">
                     <img src={item.image} alt="" className="size-10 rounded object-cover" />

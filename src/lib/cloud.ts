@@ -34,7 +34,7 @@ function asOrder(row: Record<string, unknown>): Order {
     phone: String(row.phone),
     address: String(row.address),
     district: String(row.district),
-    shippingType: row.shipping_type === 'upazila' ? 'upazila' : 'district',
+    shippingType: row.shipping_type === 'upazila' ? 'upazila' : row.shipping_type === 'home' ? 'home' : 'district',
     shippingFee: Number(row.shipping_fee),
     subtotal: Number(row.subtotal),
     total: Number(row.total),

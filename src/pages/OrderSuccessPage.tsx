@@ -1,5 +1,6 @@
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useStore } from '@/context/StoreContext'
+import { SHIPPING } from '@/lib/districts'
 import type { Order } from '@/lib/types'
 import { formatTaka } from '@/lib/utils'
 import { CheckCircle2 } from 'lucide-react'
@@ -24,6 +25,7 @@ export function OrderSuccessPage() {
           <p className="font-mono font-bold">{order.id}</p>
           <p className="mt-3">{order.customerName} · {order.phone}</p>
           <p className="text-sm">{order.address}, {order.district}</p>
+          <p className="text-sm">শিপিং: {SHIPPING[order.shippingType]?.label ?? order.shippingType} ({formatTaka(order.shippingFee)})</p>
           <p className="mt-3 text-xl font-extrabold text-leaf">{formatTaka(order.total)}</p>
         </div>
       )}

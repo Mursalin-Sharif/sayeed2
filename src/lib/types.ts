@@ -41,7 +41,7 @@ export type Order = {
   phone: string
   address: string
   district: string
-  shippingType: 'district' | 'upazila'
+  shippingType: 'district' | 'upazila' | 'home'
   shippingFee: number
   subtotal: number
   total: number
@@ -113,7 +113,7 @@ export type CheckoutInput = {
   phone: string
   address: string
   district: string
-  shippingType: 'district' | 'upazila'
+  shippingType: 'district' | 'upazila' | 'home'
   notes?: string
 }
 
