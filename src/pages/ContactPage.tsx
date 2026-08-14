@@ -50,9 +50,9 @@ export function ContactPage() {
           <p className="flex items-start justify-center gap-3">
             <Phone className="mt-1 shrink-0 text-leaf-mid" />
             <span>
-              <a href={`tel:${SITE.phone}`}>{SITE.phone}</a> (WhatsApp / Imo)
+              <a href={`tel:${SITE.phone2}`}>{SITE.phone2}</a> (WhatsApp / Imo)
               <br />
-              <a href={`tel:${SITE.phone2}`}>{SITE.phone2}</a> (WhatsApp)
+              <a href={`tel:${SITE.phone}`}>{SITE.phone}</a> (WhatsApp / Imo)
             </span>
           </p>
           <p className="flex items-start justify-center gap-3">

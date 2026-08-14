@@ -1,5 +1,5 @@
 import { useStore } from '@/context/StoreContext'
-import { formatDate } from '@/lib/utils'
+import { confirmDelete, formatDate } from '@/lib/utils'
 
 export function AdminMessagesPage() {
   const { messages, markMessageRead, deleteMessage } = useStore()
@@ -30,7 +30,14 @@ export function AdminMessagesPage() {
                     Mark as read
                   </button>
                 )}
-                <button type="button" className="text-red-400" onClick={() => void deleteMessage(item.id)}>
+                <button
+                  type="button"
+                  className="text-red-400"
+                  onClick={() => {
+                    if (!confirmDelete(item.name)) return
+                    void deleteMessage(item.id)
+                  }}
+                >
                   Delete
                 </button>
               </div>

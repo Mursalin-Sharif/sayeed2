@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '@/context/StoreContext'
 import type { OrderStatus } from '@/lib/types'
-import { formatDate, formatTaka } from '@/lib/utils'
+import { confirmDelete, formatDate, formatTaka } from '@/lib/utils'
 
 const statuses: OrderStatus[] = [
   'pending',
@@ -22,7 +22,7 @@ const statusLabel: Record<OrderStatus, string> = {
 }
 
 export function AdminOrdersPage() {
-  const { orders, updateOrderStatus } = useStore()
+  const { orders, updateOrderStatus, deleteOrder } = useStore()
   const [filter, setFilter] = useState<'all' | OrderStatus>('all')
   const [openId, setOpenId] = useState<string | null>(null)
   const list = useMemo(
@@ -84,6 +84,16 @@ export function AdminOrdersPage() {
               onClick={() => setOpenId(openId === order.id ? null : order.id)}
             >
               {openId === order.id ? 'Close' : 'Details'}
+            </button>
+            <button
+              type="button"
+              className="ml-4 mt-3 text-sm text-red-400"
+              onClick={() => {
+                if (!confirmDelete(order.customerName)) return
+                void deleteOrder(order.id)
+              }}
+            >
+              Delete
             </button>
             {openId === order.id && (
               <div className="mt-3 space-y-2 border-t border-white/10 pt-3 text-sm">

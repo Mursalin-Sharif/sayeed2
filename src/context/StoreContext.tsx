@@ -22,6 +22,7 @@ import { uid } from '@/lib/utils'
 import { customersFromOrders, loadSnapshot, saveSnapshot } from '@/lib/localStore'
 import {
   cloudDeleteMedia,
+  cloudDeleteOrder,
   cloudDeleteProduct,
   cloudDeleteSlide,
   cloudInsertOrder,
@@ -41,6 +42,7 @@ type StoreContextValue = StoreSnapshot & {
   deleteProduct: (id: string) => Promise<void>
   placeOrder: (input: CheckoutInput) => Promise<Order>
   updateOrderStatus: (id: string, status: Order['status']) => Promise<void>
+  deleteOrder: (id: string) => Promise<void>
   saveSlide: (slide: CarouselSlide) => Promise<void>
   deleteSlide: (id: string) => Promise<void>
   saveMedia: (item: LandingMedia) => Promise<void>
@@ -140,6 +142,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [commit],
   )
 
+  const deleteOrder = useCallback(
+    async (id: string) => {
+      commit((prev) => ({ ...prev, orders: prev.orders.filter((order) => order.id !== id) }))
+      await cloudDeleteOrder(id)
+    },
+    [commit],
+  )
+
   const saveSlide = useCallback(
     async (slide: CarouselSlide) => {
       commit((prev) => ({
@@ -234,6 +244,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deleteProduct,
       placeOrder,
       updateOrderStatus,
+      deleteOrder,
       saveSlide,
       deleteSlide,
       saveMedia,
@@ -250,6 +261,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       deleteProduct,
       placeOrder,
       updateOrderStatus,
+      deleteOrder,
       saveSlide,
       deleteSlide,
       saveMedia,

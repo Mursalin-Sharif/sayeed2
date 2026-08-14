@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { AdminGalleryUpload, AdminUploadField } from '@/components/admin/AdminUploadField'
 import { useStore } from '@/context/StoreContext'
 import type { Product } from '@/lib/types'
-import { formatTaka, uid } from '@/lib/utils'
+import { confirmDelete, formatTaka, uid } from '@/lib/utils'
 
 const empty: Omit<Product, 'id' | 'createdAt'> = {
   name: '',
@@ -22,8 +22,11 @@ export function AdminProductsPage() {
   const [editing, setEditing] = useState<Product | null>(null)
   const [form, setForm] = useState(empty)
   const [galleryText, setGalleryText] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState('')
 
   function startEdit(product?: Product) {
+    setNotice('')
     if (product) {
       setEditing(product)
       setForm({
@@ -48,17 +51,34 @@ export function AdminProductsPage() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
-    const product: Product = {
-      id: editing?.id ?? uid('prod'),
-      createdAt: editing?.createdAt ?? new Date().toISOString(),
-      ...form,
-      gallery: galleryText
-        .split('\n')
-        .map((line) => line.trim())
-        .filter(Boolean),
+    setSaving(true)
+    setNotice('')
+    try {
+      const product: Product = {
+        id: editing?.id ?? uid('prod'),
+        createdAt: editing?.createdAt ?? new Date().toISOString(),
+        ...form,
+        gallery: galleryText
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean),
+      }
+      await saveProduct(product)
+      const message = editing ? 'Product updated.' : 'Product saved.'
+      setEditing(null)
+      setForm(empty)
+      setGalleryText('')
+      setNotice(message)
+    } finally {
+      setSaving(false)
     }
-    await saveProduct(product)
-    startEdit()
+  }
+
+  async function onDelete(product: Product) {
+    if (!confirmDelete(product.name)) return
+    await deleteProduct(product.id)
+    if (editing?.id === product.id) startEdit()
+    setNotice('Product deleted.')
   }
 
   return (
@@ -93,11 +113,7 @@ export function AdminProductsPage() {
                     <button type="button" className="mr-3 text-gold" onClick={() => startEdit(product)}>
                       Edit
                     </button>
-                    <button
-                      type="button"
-                      className="text-red-400"
-                      onClick={() => void deleteProduct(product.id)}
-                    >
+                    <button type="button" className="text-red-400" onClick={() => void onDelete(product)}>
                       Delete
                     </button>
                   </td>
@@ -109,6 +125,7 @@ export function AdminProductsPage() {
       </div>
       <form onSubmit={onSubmit} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
         <h2 className="font-semibold">{editing ? 'Edit product' : 'New product'}</h2>
+        {notice ? <p className="text-sm font-semibold text-emerald-400">{notice}</p> : null}
         <input
           placeholder="Name"
           value={form.name}
@@ -178,9 +195,10 @@ export function AdminProductsPage() {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="flex-1 rounded-xl bg-gold py-2 font-bold text-leaf-deep"
+            disabled={saving}
+            className="flex-1 rounded-xl bg-gold py-2 font-bold text-leaf-deep disabled:opacity-60"
           >
-            Save
+            {saving ? 'Saving...' : editing ? 'Update' : 'Save'}
           </button>
           {editing && (
             <button type="button" onClick={() => startEdit()} className="rounded-xl bg-white/10 px-3">

@@ -170,6 +170,11 @@ export async function cloudUpdateOrderStatus(id: string, status: Order['status']
   await supabase.from('orders').update({ status }).eq('id', id)
 }
 
+export async function cloudDeleteOrder(id: string) {
+  if (!supabase) return
+  await supabase.from('orders').delete().eq('id', id)
+}
+
 export async function cloudUpsertSlide(slide: CarouselSlide) {
   if (!supabase) return
   await supabase.from('carousel_slides').upsert({
@@ -235,10 +240,36 @@ export async function uploadMediaFile(file: File): Promise<string> {
       return data.publicUrl
     }
   }
+  if (file.type.startsWith('image/')) return compressImageFile(file)
+  return readAsDataUrl(file)
+}
+
+function readAsDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => resolve(String(reader.result))
     reader.onerror = () => reject(reader.error)
     reader.readAsDataURL(file)
   })
+}
+
+async function compressImageFile(file: File): Promise<string> {
+  try {
+    const bitmap = await createImageBitmap(file)
+    const max = 1400
+    const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height))
+    const canvas = document.createElement('canvas')
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
+    const ctx = canvas.getContext('2d')
+    if (!ctx) {
+      bitmap.close()
+      return readAsDataUrl(file)
+    }
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
+    bitmap.close()
+    return canvas.toDataURL('image/jpeg', 0.8)
+  } catch {
+    return readAsDataUrl(file)
+  }
 }

@@ -1,7 +1,7 @@
 import type { Customer, Order, StoreSnapshot } from './types'
 import { createSeedSnapshot } from './seed'
 
-const KEY = 'js-agro-shop-store-v1'
+const KEY = 'js-agro-shop-store-v5'
 
 export function customersFromOrders(orders: Order[]): Customer[] {
   const map = new Map<string, Customer>()
@@ -52,6 +52,14 @@ export function loadSnapshot(): StoreSnapshot {
       messages: parsed.messages ?? seed.messages,
     }
     snapshot.customers = customersFromOrders(snapshot.orders)
+    snapshot.slides = snapshot.slides.map((slide) => ({
+      ...slide,
+      subtitle: slide.subtitle.replaceAll('৯.৮ হাজার', '২০ হাজার'),
+    }))
+    snapshot.landing = {
+      ...snapshot.landing,
+      heroSubtitle: snapshot.landing.heroSubtitle.replaceAll('৯.৮ হাজার', '২০ হাজার'),
+    }
     return snapshot
   } catch {
     return createSeedSnapshot()
@@ -64,7 +72,11 @@ export function saveSnapshot(snapshot: StoreSnapshot) {
     messages: snapshot.messages ?? [],
     customers: customersFromOrders(snapshot.orders),
   }
-  localStorage.setItem(KEY, JSON.stringify(next))
+  try {
+    localStorage.setItem(KEY, JSON.stringify(next))
+  } catch {
+    // Keep in-memory changes working even if storage is full.
+  }
   return next
 }
 

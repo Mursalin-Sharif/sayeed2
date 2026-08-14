@@ -2,7 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { AdminUploadField } from '@/components/admin/AdminUploadField'
 import { useStore } from '@/context/StoreContext'
 import type { CarouselSlide } from '@/lib/types'
-import { uid } from '@/lib/utils'
+import { confirmDelete, uid } from '@/lib/utils'
 
 const empty = {
   image: '',
@@ -18,22 +18,43 @@ export function AdminCarouselPage() {
   const { slides, saveSlide, deleteSlide } = useStore()
   const [form, setForm] = useState(empty)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState('')
+
+  function resetForm() {
+    setForm(empty)
+    setEditingId(null)
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
-    const slide: CarouselSlide = {
-      id: editingId ?? uid('slide'),
-      ...form,
+    setSaving(true)
+    setNotice('')
+    try {
+      const slide: CarouselSlide = {
+        id: editingId ?? uid('slide'),
+        ...form,
+      }
+      await saveSlide(slide)
+      setNotice(editingId ? 'Slide updated.' : 'Slide saved.')
+      resetForm()
+    } finally {
+      setSaving(false)
     }
-    await saveSlide(slide)
-    setForm(empty)
-    setEditingId(null)
+  }
+
+  async function onDelete(slide: CarouselSlide) {
+    if (!confirmDelete(slide.title || 'this slide')) return
+    await deleteSlide(slide.id)
+    if (editingId === slide.id) resetForm()
+    setNotice('Slide deleted.')
   }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
       <div>
         <h1 className="font-display text-3xl text-gold">Home carousel</h1>
+        {notice ? <p className="mt-2 text-sm font-semibold text-emerald-400">{notice}</p> : null}
         <div className="mt-6 space-y-3">
           {slides
             .slice()
@@ -49,6 +70,7 @@ export function AdminCarouselPage() {
                       type="button"
                       className="text-gold"
                       onClick={() => {
+                        setNotice('')
                         setEditingId(slide.id)
                         setForm({
                           image: slide.image,
@@ -63,7 +85,14 @@ export function AdminCarouselPage() {
                     >
                       Edit
                     </button>
-                    <button type="button" className="text-red-400" onClick={() => void deleteSlide(slide.id)}>
+                    <button
+                      type="button"
+                      className="text-gold"
+                      onClick={() => void saveSlide({ ...slide, active: !slide.active })}
+                    >
+                      {slide.active ? 'Hide' : 'Show'}
+                    </button>
+                    <button type="button" className="text-red-400" onClick={() => void onDelete(slide)}>
                       Delete
                     </button>
                   </div>
@@ -111,9 +140,28 @@ export function AdminCarouselPage() {
           onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
           className="w-full rounded-xl bg-black/30 px-3 py-2"
         />
-        <button type="submit" className="w-full rounded-xl bg-gold py-2 font-bold text-leaf-deep">
-          Save
-        </button>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.active}
+            onChange={(e) => setForm({ ...form, active: e.target.checked })}
+          />
+          Visible on homepage
+        </label>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 rounded-xl bg-gold py-2 font-bold text-leaf-deep disabled:opacity-60"
+          >
+            {saving ? 'Saving...' : editingId ? 'Update' : 'Save'}
+          </button>
+          {editingId ? (
+            <button type="button" onClick={resetForm} className="rounded-xl bg-white/10 px-3">
+              Cancel
+            </button>
+          ) : null}
+        </div>
       </form>
     </div>
   )

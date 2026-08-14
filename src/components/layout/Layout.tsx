@@ -116,10 +116,10 @@ export function Layout({ children }: { children: ReactNode }) {
             <p className="mb-3 font-bold text-gold">যোগাযোগ</p>
             <p className="text-sm">{SITE.address}</p>
             <p className="text-sm">
-              <a href={`tel:${SITE.phone}`}>{SITE.phone}</a>
+              <a href={`tel:${SITE.phone2}`}>{SITE.phone2}</a> (WhatsApp)
             </p>
             <p className="text-sm">
-              <a href={`tel:${SITE.phone2}`}>{SITE.phone2}</a>
+              <a href={`tel:${SITE.phone}`}>{SITE.phone}</a> (WhatsApp)
             </p>
           </div>
         </div>

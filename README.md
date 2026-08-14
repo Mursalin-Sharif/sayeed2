@@ -15,7 +15,7 @@ npm run dev
 
 ## যোগাযোগ
 
-- WhatsApp / Imo: 01725-250188
-- WhatsApp: 01813-514791
+- WhatsApp / Imo: 01813-514791
+- কল: 01725-250188
 - ইমেইল: jsagroshop63@gmail.com
 - ঠিকানা: নাটোর সদর, নাটোর

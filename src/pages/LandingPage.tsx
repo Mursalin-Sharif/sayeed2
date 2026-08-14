@@ -98,7 +98,9 @@ export function LandingPage() {
           {landing.paymentTitle} {landing.paymentNumber}
         </h2>
         <p className="mx-auto mt-2 max-w-2xl font-semibold">{landing.paymentNote}</p>
-        <p className="mt-1 text-sm">হটলাইন: {SITE.phone}</p>
+        <p className="mt-1 text-sm">
+          হটলাইন: {SITE.phone2} · {SITE.phone}
+        </p>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-12">

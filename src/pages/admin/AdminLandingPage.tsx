@@ -4,6 +4,8 @@ import { useStore } from '@/context/StoreContext'
 export function AdminLandingPage() {
   const { landing, saveLanding, products } = useStore()
   const [form, setForm] = useState(landing)
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState('')
 
   useEffect(() => {
     setForm(landing)
@@ -11,12 +13,24 @@ export function AdminLandingPage() {
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
-    await saveLanding(form)
+    setSaving(true)
+    setNotice('')
+    try {
+      await saveLanding({
+        ...form,
+        packageItems: form.packageItems.map((item) => item.trim()).filter(Boolean),
+        whyItems: form.whyItems.map((item) => item.trim()).filter(Boolean),
+      })
+      setNotice('Landing page saved.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <form onSubmit={onSubmit} className="max-w-3xl space-y-4">
       <h1 className="font-display text-3xl text-gold">Landing page content</h1>
+      {notice ? <p className="text-sm font-semibold text-emerald-400">{notice}</p> : null}
       <label className="block text-sm text-zinc-400">
         Hero title
         <input
@@ -45,7 +59,7 @@ export function AdminLandingPage() {
         Package items (one per line)
         <textarea
           value={form.packageItems.join('\n')}
-          onChange={(e) => setForm({ ...form, packageItems: e.target.value.split('\n').filter(Boolean) })}
+          onChange={(e) => setForm({ ...form, packageItems: e.target.value.split('\n') })}
           className="mt-1 min-h-40 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
         />
       </label>
@@ -77,7 +91,7 @@ export function AdminLandingPage() {
         Why items (one per line)
         <textarea
           value={form.whyItems.join('\n')}
-          onChange={(e) => setForm({ ...form, whyItems: e.target.value.split('\n').filter(Boolean) })}
+          onChange={(e) => setForm({ ...form, whyItems: e.target.value.split('\n') })}
           className="mt-1 min-h-28 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
         />
       </label>
@@ -119,8 +133,8 @@ export function AdminLandingPage() {
           ))}
         </select>
       </label>
-      <button type="submit" className="rounded-xl bg-gold px-6 py-3 font-bold text-leaf-deep">
-        Save
+      <button type="submit" disabled={saving} className="rounded-xl bg-gold px-6 py-3 font-bold text-leaf-deep disabled:opacity-60">
+        {saving ? 'Saving...' : 'Save'}
       </button>
     </form>
   )

@@ -53,7 +53,10 @@ export function AdminUploadField({
           accept={accept}
           className="hidden"
           disabled={uploading}
-          onChange={(event) => void onFile(event.target.files?.[0])}
+          onChange={(event) => {
+            void onFile(event.target.files?.[0])
+            event.target.value = ''
+          }}
         />
       </label>
       <input
@@ -119,7 +122,10 @@ export function AdminGalleryUpload({
           multiple
           className="hidden"
           disabled={uploading}
-          onChange={(event) => void onFiles(event.target.files)}
+          onChange={(event) => {
+            void onFiles(event.target.files)
+            event.target.value = ''
+          }}
         />
       </label>
       <textarea

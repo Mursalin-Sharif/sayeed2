@@ -6,7 +6,7 @@ const FEATURES: { icon: LucideIcon; title: string; text: string }[] = [
   { icon: Truck, title: 'কুরিয়ার ও বাস ডেলিভারি', text: 'সারা বাংলাদেশে পৌঁছে যায়' },
   { icon: ShieldCheck, title: 'জাতের গ্যারান্টি', text: 'প্রতিটি চারায় শতভাগ নিশ্চয়তা' },
   { icon: Leaf, title: 'দেশি-বিদেশি চারা', text: 'ফল ও সবজির চারা একসাথে' },
-  { icon: PhoneCall, title: 'WhatsApp / Imo', text: SITE.phone },
+  { icon: PhoneCall, title: 'WhatsApp / Imo', text: `${SITE.phone2} · ${SITE.phone}` },
 ]
 
 function FeatureCard({ icon: Icon, title, text }: (typeof FEATURES)[number]) {

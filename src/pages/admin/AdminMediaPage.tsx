@@ -2,30 +2,55 @@ import { useState, type FormEvent } from 'react'
 import { AdminUploadField } from '@/components/admin/AdminUploadField'
 import { useStore } from '@/context/StoreContext'
 import type { LandingMedia } from '@/lib/types'
-import { uid } from '@/lib/utils'
+import { confirmDelete, uid } from '@/lib/utils'
+
+const empty = {
+  type: 'image' as LandingMedia['type'],
+  url: '',
+  title: '',
+  caption: '',
+  sortOrder: 1,
+  active: true,
+}
 
 export function AdminMediaPage() {
   const { media, saveMedia, deleteMedia } = useStore()
-  const [form, setForm] = useState<Omit<LandingMedia, 'id'>>({
-    type: 'image',
-    url: '',
-    title: '',
-    caption: '',
-    sortOrder: media.length + 1,
-    active: true,
-  })
+  const [form, setForm] = useState(empty)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState('')
+
+  function resetForm() {
+    setForm({ ...empty, sortOrder: media.length + 1 })
+    setEditingId(null)
+  }
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
-    await saveMedia({ id: uid('media'), ...form })
-    setForm({ type: 'image', url: '', title: '', caption: '', sortOrder: media.length + 2, active: true })
+    setSaving(true)
+    setNotice('')
+    try {
+      await saveMedia({ id: editingId ?? uid('media'), ...form })
+      setNotice(editingId ? 'Media updated.' : 'Media saved.')
+      resetForm()
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function onDelete(item: LandingMedia) {
+    if (!confirmDelete(item.title || 'this file')) return
+    await deleteMedia(item.id)
+    if (editingId === item.id) resetForm()
+    setNotice('Media deleted.')
   }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
       <div>
         <h1 className="font-display text-3xl text-gold">Landing media</h1>
-        <p className="mt-1 text-zinc-400">Add or remove images and videos on the offer page</p>
+        <p className="mt-1 text-zinc-400">Add, edit or remove images and videos on the offer page</p>
+        {notice ? <p className="mt-2 text-sm font-semibold text-emerald-400">{notice}</p> : null}
         <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {media
             .slice()
@@ -40,7 +65,25 @@ export function AdminMediaPage() {
                 <div className="p-3">
                   <p className="font-semibold">{item.title || 'Untitled'}</p>
                   <p className="text-xs text-zinc-400">{item.caption}</p>
-                  <div className="mt-2 flex items-center justify-between text-sm">
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-sm">
+                    <button
+                      type="button"
+                      className="text-gold"
+                      onClick={() => {
+                        setNotice('')
+                        setEditingId(item.id)
+                        setForm({
+                          type: item.type,
+                          url: item.url,
+                          title: item.title,
+                          caption: item.caption,
+                          sortOrder: item.sortOrder,
+                          active: item.active,
+                        })
+                      }}
+                    >
+                      Edit
+                    </button>
                     <button
                       type="button"
                       className="text-gold"
@@ -48,7 +91,7 @@ export function AdminMediaPage() {
                     >
                       {item.active ? 'Hide' : 'Show'}
                     </button>
-                    <button type="button" className="text-red-400" onClick={() => void deleteMedia(item.id)}>
+                    <button type="button" className="text-red-400" onClick={() => void onDelete(item)}>
                       Delete
                     </button>
                   </div>
@@ -58,7 +101,7 @@ export function AdminMediaPage() {
         </div>
       </div>
       <form onSubmit={onSubmit} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-        <h2 className="font-semibold">New media</h2>
+        <h2 className="font-semibold">{editingId ? 'Edit media' : 'New media'}</h2>
         <select
           value={form.type}
           onChange={(e) => setForm({ ...form, type: e.target.value === 'video' ? 'video' : 'image' })}
@@ -101,9 +144,28 @@ export function AdminMediaPage() {
           onChange={(e) => setForm({ ...form, sortOrder: Number(e.target.value) })}
           className="w-full rounded-xl bg-black/30 px-3 py-2"
         />
-        <button type="submit" className="w-full rounded-xl bg-gold py-2 font-bold text-leaf-deep">
-          Add
-        </button>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.active}
+            onChange={(e) => setForm({ ...form, active: e.target.checked })}
+          />
+          Visible on offer page
+        </label>
+        <div className="flex gap-2">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 rounded-xl bg-gold py-2 font-bold text-leaf-deep disabled:opacity-60"
+          >
+            {saving ? 'Saving...' : editingId ? 'Update' : 'Save'}
+          </button>
+          {editingId ? (
+            <button type="button" onClick={resetForm} className="rounded-xl bg-white/10 px-3">
+              Cancel
+            </button>
+          ) : null}
+        </div>
       </form>
     </div>
   )

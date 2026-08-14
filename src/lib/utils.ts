@@ -30,3 +30,7 @@ export function normalizeBdPhone(raw: string) {
 export function isValidBdPhone(raw: string) {
   return /^01[0-9]{9}$/.test(normalizeBdPhone(raw))
 }
+
+export function confirmDelete(label: string) {
+  return window.confirm(`Delete ${label}? This cannot be undone.`)
+}

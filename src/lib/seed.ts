@@ -18,13 +18,13 @@ export const SITE = {
   tagline: 'দেশি-বিদেশি ফল ও সবজির চারা · নাটোর সদর',
   phone: '01725-250188',
   phone2: '01813-514791',
-  whatsapp: '8801725250188',
+  whatsapp: '8801813514791',
   email: 'jsagroshop63@gmail.com',
   address: 'নাটোর সদর, নাটোর, বাংলাদেশ',
   hours: 'WhatsApp / Imo — সারাদিন যোগাযোগ করুন',
   facebook: 'https://www.facebook.com/share/1CnLBxJqHr/',
   logo: '/images/logo.svg',
-  followers: '৯.৮ হাজার ফলোয়ার',
+  followers: '২০ হাজার ফলোয়ার',
 }
 
 export const seedProducts: Product[] = [
@@ -48,7 +48,7 @@ export const seedProducts: Product[] = [
     name: 'হাইব্রিড পেঁপে চারা',
     headline: '১০০% হাইব্রিড · শতভাগ জাতের গ্যারান্টি',
     description:
-      'সিজনের সেরা ও স্বাস্থ্যকর হাইব্রিড পেঁপে চারা। JS Agro Shop-এর প্রতিটি চারায় শতভাগ জাতের গ্যারান্টি। সারা দেশে কুরিয়ার ও বাস সার্ভিসে ডেলিভারি। WhatsApp/Imo: 01725-250188, 01813-514791।',
+      'সিজনের সেরা ও স্বাস্থ্যকর হাইব্রিড পেঁপে চারা। JS Agro Shop-এর প্রতিটি চারায় শতভাগ জাতের গ্যারান্টি। সারা দেশে কুরিয়ার ও বাস সার্ভিসে ডেলিভারি। WhatsApp/Imo: 01813-514791, 01725-250188।',
     price: 150,
     comparePrice: 250,
     image: img('fruits.jpg'),
@@ -280,7 +280,7 @@ export const seedSlides: CarouselSlide[] = [
     id: 'slide_quality',
     image: img('greenhouse.jpg'),
     title: 'JS Agro Shop · নাটোর',
-    subtitle: '৯.৮ হাজার ফলোয়ারের আস্থা · সুস্থ সবল চারা',
+    subtitle: '২০ হাজার ফলোয়ারের আস্থা · সুস্থ সবল চারা',
     ctaText: 'অফার দেখুন',
     ctaLink: '/offer',
     sortOrder: 3,
@@ -290,7 +290,7 @@ export const seedSlides: CarouselSlide[] = [
     id: 'slide_delivery',
     image: img('hero-delivery.jpg'),
     title: 'সারা বাংলাদেশে ডেলিভারি',
-    subtitle: 'কুরিয়ার ও বাস সার্ভিস · WhatsApp/Imo: 01725-250188',
+    subtitle: 'কুরিয়ার ও বাস সার্ভিস · WhatsApp/Imo: 01813-514791, 01725-250188',
     ctaText: 'যোগাযোগ করুন',
     ctaLink: '/contact',
     sortOrder: 4,
@@ -318,7 +318,7 @@ export const seedMedia: LandingMedia[] = [
 
 export const seedLanding: LandingContent = {
   heroTitle: 'পণ্য নয়, আস্থা বিনিময় করি',
-  heroSubtitle: 'দেশি-বিদেশি ফল ও সবজির চারা · নাটোর সদর · ৯.৮ হাজার ফলোয়ারের আস্থা',
+  heroSubtitle: 'দেশি-বিদেশি ফল ও সবজির চারা · নাটোর সদর · ২০ হাজার ফলোয়ারের আস্থা',
   packageTitle: 'আমাদের কাছে পাবেন:',
   packageItems: [
     'হাইব্রিড পেঁপে চারা (শতভাগ জাতের গ্যারান্টি)',
@@ -344,7 +344,7 @@ export const seedLanding: LandingContent = {
     'দেশি-বিদেশি ফল ও সবজির চারা এক জায়গায়।',
   ],
   paymentTitle: 'WhatsApp / Imo',
-  paymentNumber: '01725-250188 · 01813-514791',
+  paymentNumber: '01813-514791 · 01725-250188',
   paymentNote: 'অর্ডার কনফার্ম করতে WhatsApp বা Imo-তে মেসেজ দিন। সারা দেশে কুরিয়ার/বাস ডেলিভারি।',
   offerProductId: 'prod_papaya',
 }
