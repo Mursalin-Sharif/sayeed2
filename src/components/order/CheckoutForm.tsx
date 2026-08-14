@@ -1,0 +1,204 @@
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { DISTRICTS, SHIPPING, type ShippingType } from '@/lib/districts'
+import type { OrderItem, Product } from '@/lib/types'
+import { formatTaka, isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
+import { useStore } from '@/context/StoreContext'
+
+type Props = {
+  products: { product: Product; quantity: number }[]
+  lockItems?: boolean
+  onOrdered?: () => void
+  alignCenter?: boolean
+}
+
+export function CheckoutForm({ products, lockItems, onOrdered, alignCenter }: Props) {
+  const { placeOrder } = useStore()
+  const navigate = useNavigate()
+  const [qty, setQty] = useState(products[0]?.quantity ?? 1)
+  const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
+  const [address, setAddress] = useState('')
+  const [district, setDistrict] = useState('Dhaka')
+  const [shipping, setShipping] = useState<ShippingType>('district')
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (products.length === 1 && !lockItems) {
+      setQty(products[0]?.quantity ?? 1)
+    }
+  }, [lockItems, products])
+
+  const lines = useMemo(() => {
+    if (products.length === 1 && !lockItems) {
+      return [{ ...products[0], quantity: qty }]
+    }
+    return products
+  }, [lockItems, products, qty])
+
+  const subtotal = lines.reduce((sum, line) => sum + line.product.price * line.quantity, 0)
+  const shippingFee = SHIPPING[shipping].fee
+  const total = subtotal + shippingFee
+
+  async function onSubmit(event: FormEvent) {
+    event.preventDefault()
+    setError('')
+    if (name.trim().length < 2) return setError('পুরো নাম লিখুন')
+    if (!isValidBdPhone(phone)) {
+      return setError('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন (01XXXXXXXXX)')
+    }
+    if (address.trim().length < 6) return setError('নিকটস্থ কুরিয়ারের ঠিকানা লিখুন')
+    setSubmitting(true)
+    try {
+      const items: OrderItem[] = lines.map((line) => ({
+        productId: line.product.id,
+        name: line.product.name,
+        image: line.product.image,
+        price: line.product.price,
+        quantity: line.quantity,
+      }))
+      const order = await placeOrder({
+        items,
+        customerName: name,
+        phone: normalizeBdPhone(phone),
+        address,
+        district,
+        shippingType: shipping,
+      })
+      onOrdered?.()
+      navigate(`/order-success/${order.id}`, { state: { order } })
+    } catch {
+      setError('অর্ডার সম্পন্ন হয়নি, আবার চেষ্টা করুন')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <form
+      onSubmit={onSubmit}
+      className={alignCenter ? 'mx-auto grid max-w-xl gap-8' : 'grid gap-8 lg:grid-cols-2'}
+      id="order-form"
+    >
+      <section className={`rounded-3xl bg-white p-6 shadow-sm ${alignCenter ? 'text-center' : ''}`}>
+        <h3 className="mb-5 text-2xl font-bold text-leaf">Billing details</h3>
+        {products.length === 1 && !lockItems && (
+          <label className="mb-4 block">
+            <span className="mb-1 block text-sm font-semibold">পরিমাণ</span>
+            <input
+              type="number"
+              min={1}
+              value={qty}
+              onChange={(e) => setQty(Math.max(1, Number(e.target.value)))}
+              className={`w-28 rounded-xl border border-leaf/20 px-3 py-2 ${alignCenter ? 'mx-auto block text-center' : ''}`}
+            />
+          </label>
+        )}
+        <label className="mb-4 block">
+          <span className="mb-1 block text-sm font-semibold">পুরো নাম *</span>
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full rounded-xl border border-leaf/20 px-4 py-3"
+            placeholder="আপনার নাম"
+            required
+          />
+        </label>
+        <label className="mb-4 block">
+          <span className="mb-1 block text-sm font-semibold">ফোন নাম্বার *</span>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            className="w-full rounded-xl border border-leaf/20 px-4 py-3"
+            placeholder="01XXXXXXXXX"
+            required
+          />
+        </label>
+        <label className="mb-4 block">
+          <span className="mb-1 block text-sm font-semibold">নিকটস্থ কুরিয়ারের ঠিকানা *</span>
+          <textarea
+            value={address}
+            onChange={(e) => setAddress(e.target.value)}
+            className="min-h-24 w-full rounded-xl border border-leaf/20 px-4 py-3"
+            placeholder="বাড়ি, রোড, এলাকা, উপজেলা"
+            required
+          />
+        </label>
+        <label className="block">
+          <span className="mb-1 block text-sm font-semibold">জেলা *</span>
+          <select
+            value={district}
+            onChange={(e) => setDistrict(e.target.value)}
+            className="w-full rounded-xl border border-leaf/20 px-4 py-3"
+          >
+            {DISTRICTS.map((item) => (
+              <option key={item} value={item}>
+                {item}
+              </option>
+            ))}
+          </select>
+        </label>
+      </section>
+
+      <section className={`rounded-3xl bg-white p-6 shadow-sm ${alignCenter ? 'text-center' : ''}`}>
+        <h3 className="mb-5 text-2xl font-bold text-leaf">Your order</h3>
+        <div className="divide-y divide-leaf/10">
+          {lines.map((line) => (
+            <div
+              key={line.product.id}
+              className={`flex items-center gap-3 py-3 ${alignCenter ? 'flex-col justify-center' : ''}`}
+            >
+              <img src={line.product.image} alt="" className="size-16 rounded-xl object-cover" onError={(e) => { e.currentTarget.src = '/images/fruits.jpg' }} />
+              <div className={alignCenter ? '' : 'flex-1'}>
+                <p className="font-semibold">{line.product.name}</p>
+                <p className="text-sm text-ink/60">
+                  {formatTaka(line.product.price)} × {line.quantity}
+                </p>
+              </div>
+              <p className="font-bold">{formatTaka(line.product.price * line.quantity)}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 space-y-2 text-sm">
+          <div className={`flex ${alignCenter ? 'justify-center gap-3' : 'justify-between'}`}>
+            <span>সাবটোটাল</span>
+            <span>{formatTaka(subtotal)}</span>
+          </div>
+          <fieldset className="rounded-2xl bg-cream p-4">
+            <legend className="px-1 font-bold text-leaf">Shipping</legend>
+            {(Object.keys(SHIPPING) as ShippingType[]).map((key) => (
+              <label
+                key={key}
+                className={`mb-2 flex cursor-pointer items-center gap-2 last:mb-0 ${alignCenter ? 'justify-center' : ''}`}
+              >
+                <input
+                  type="radio"
+                  name="shipping"
+                  checked={shipping === key}
+                  onChange={() => setShipping(key)}
+                />
+                <span>
+                  {SHIPPING[key].label}: {formatTaka(SHIPPING[key].fee)}
+                </span>
+              </label>
+            ))}
+          </fieldset>
+          <div className={`flex text-lg font-extrabold text-leaf ${alignCenter ? 'justify-center gap-3' : 'justify-between'}`}>
+            <span>মোট</span>
+            <span>{formatTaka(total)}</span>
+          </div>
+          <p className="rounded-xl bg-leaf-light px-3 py-2 text-leaf">Cash on delivery — পণ্য হাতে পেয়ে টাকা দিবেন।</p>
+        </div>
+        {error && <p className="mt-3 text-sm font-semibold text-red-600">{error}</p>}
+        <button
+          type="submit"
+          disabled={submitting}
+          className="mt-6 w-full rounded-xl bg-gold py-4 text-lg font-extrabold text-leaf-deep shadow hover:bg-gold-dark disabled:opacity-60"
+        >
+          {submitting ? 'অর্ডার হচ্ছে...' : `Place Order ${formatTaka(total)}`}
+        </button>
+      </section>
+    </form>
+  )
+}

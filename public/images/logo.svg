@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <circle cx="64" cy="64" r="64" fill="#0b3d2e"/>
+  <circle cx="64" cy="64" r="55" fill="none" stroke="#f0c419" stroke-width="4"/>
+  <path d="M64 26c-1 16-11 26-18 32 12-2 16-12 18-32Z" fill="#f0c419"/>
+  <path d="M64 26c1 16 11 26 18 32-12-2-16-12-18-32Z" fill="#c9a014"/>
+  <path d="M64 26v28" stroke="#f0c419" stroke-width="3.2" stroke-linecap="round"/>
+  <text x="64" y="102" text-anchor="middle" fill="#f0c419" font-family="ui-sans-serif, system-ui, sans-serif" font-size="38" font-weight="800" letter-spacing="-1.5">JS</text>
+</svg>
