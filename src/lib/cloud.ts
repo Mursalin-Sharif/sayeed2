@@ -9,6 +9,10 @@ import type {
 import { isSupabaseEnabled, supabase } from './supabase'
 import { customersFromOrders } from './localStore'
 
+function fail(error: { message: string } | null) {
+  if (error) throw new Error(error.message)
+}
+
 function asProduct(row: Record<string, unknown>): Product {
   return {
     id: String(row.id),
@@ -125,7 +129,7 @@ export async function fetchCloudSnapshot(): Promise<StoreSnapshot | null> {
 
 export async function cloudUpsertProduct(product: Product) {
   if (!supabase) return
-  await supabase.from('products').upsert({
+  const { error } = await supabase.from('products').upsert({
     id: product.id,
     name: product.name,
     headline: product.headline,
@@ -139,16 +143,18 @@ export async function cloudUpsertProduct(product: Product) {
     featured: product.featured,
     created_at: product.createdAt,
   })
+  fail(error)
 }
 
 export async function cloudDeleteProduct(id: string) {
   if (!supabase) return
-  await supabase.from('products').delete().eq('id', id)
+  const { error } = await supabase.from('products').delete().eq('id', id)
+  fail(error)
 }
 
 export async function cloudInsertOrder(order: Order) {
   if (!supabase) return
-  await supabase.from('orders').insert({
+  const { error } = await supabase.from('orders').insert({
     id: order.id,
     items: order.items,
     customer_name: order.customerName,
@@ -163,21 +169,24 @@ export async function cloudInsertOrder(order: Order) {
     notes: order.notes,
     created_at: order.createdAt,
   })
+  fail(error)
 }
 
 export async function cloudUpdateOrderStatus(id: string, status: Order['status']) {
   if (!supabase) return
-  await supabase.from('orders').update({ status }).eq('id', id)
+  const { error } = await supabase.from('orders').update({ status }).eq('id', id)
+  fail(error)
 }
 
 export async function cloudDeleteOrder(id: string) {
   if (!supabase) return
-  await supabase.from('orders').delete().eq('id', id)
+  const { error } = await supabase.from('orders').delete().eq('id', id)
+  fail(error)
 }
 
 export async function cloudUpsertSlide(slide: CarouselSlide) {
   if (!supabase) return
-  await supabase.from('carousel_slides').upsert({
+  const { error } = await supabase.from('carousel_slides').upsert({
     id: slide.id,
     image: slide.image,
     title: slide.title,
@@ -187,16 +196,18 @@ export async function cloudUpsertSlide(slide: CarouselSlide) {
     sort_order: slide.sortOrder,
     active: slide.active,
   })
+  fail(error)
 }
 
 export async function cloudDeleteSlide(id: string) {
   if (!supabase) return
-  await supabase.from('carousel_slides').delete().eq('id', id)
+  const { error } = await supabase.from('carousel_slides').delete().eq('id', id)
+  fail(error)
 }
 
 export async function cloudUpsertMedia(item: LandingMedia) {
   if (!supabase) return
-  await supabase.from('landing_media').upsert({
+  const { error } = await supabase.from('landing_media').upsert({
     id: item.id,
     type: item.type,
     url: item.url,
@@ -205,16 +216,18 @@ export async function cloudUpsertMedia(item: LandingMedia) {
     sort_order: item.sortOrder,
     active: item.active,
   })
+  fail(error)
 }
 
 export async function cloudDeleteMedia(id: string) {
   if (!supabase) return
-  await supabase.from('landing_media').delete().eq('id', id)
+  const { error } = await supabase.from('landing_media').delete().eq('id', id)
+  fail(error)
 }
 
 export async function cloudSaveLanding(landing: LandingContent) {
   if (!supabase) return
-  await supabase.from('landing_content').upsert({
+  const { error } = await supabase.from('landing_content').upsert({
     id: 1,
     hero_title: landing.heroTitle,
     hero_subtitle: landing.heroSubtitle,
@@ -229,6 +242,7 @@ export async function cloudSaveLanding(landing: LandingContent) {
     payment_note: landing.paymentNote,
     offer_product_id: landing.offerProductId,
   })
+  fail(error)
 }
 
 export async function uploadMediaFile(file: File): Promise<string> {

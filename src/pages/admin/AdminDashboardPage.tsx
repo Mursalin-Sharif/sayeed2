@@ -19,11 +19,11 @@ export function AdminDashboardPage() {
   const pending = orders.filter((order) => order.status === 'pending').length
 
   const cards = [
-    { label: 'Total orders', value: String(orders.length) },
-    { label: 'New orders', value: String(pending) },
-    { label: 'Revenue', value: formatTaka(revenue) },
-    { label: 'Customers', value: String(customers.length) },
-    { label: 'Products', value: String(products.length) },
+    { label: 'Total orders', value: String(orders.length), to: '/admin/orders' },
+    { label: 'New orders', value: String(pending), to: '/admin/orders' },
+    { label: 'Revenue', value: formatTaka(revenue), to: '/admin/orders' },
+    { label: 'Customers', value: String(customers.length), to: '/admin/customers' },
+    { label: 'Products', value: String(products.length), to: '/admin/products' },
   ]
 
   return (
@@ -32,10 +32,14 @@ export function AdminDashboardPage() {
       <p className="mt-1 text-zinc-400">Orders, sales and customer overview</p>
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         {cards.map((card) => (
-          <div key={card.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+          <Link
+            key={card.label}
+            to={card.to}
+            className="rounded-2xl border border-white/10 bg-white/5 p-4 transition hover:border-gold/40 hover:bg-white/10"
+          >
             <p className="text-xs text-zinc-400">{card.label}</p>
             <p className="mt-2 text-2xl font-bold">{card.value}</p>
-          </div>
+          </Link>
         ))}
       </div>
       <div className="mt-10 overflow-hidden rounded-2xl border border-white/10">
@@ -57,10 +61,18 @@ export function AdminDashboardPage() {
           <tbody>
             {orders.slice(0, 8).map((order) => (
               <tr key={order.id} className="border-t border-white/10">
-                <td className="px-4 py-2">{order.customerName}</td>
-                <td className="px-4 py-2">{order.phone}</td>
+                <td className="px-4 py-2">
+                  <Link to="/admin/orders" className="font-semibold text-gold hover:underline">
+                    {order.customerName}
+                  </Link>
+                </td>
+                <td className="px-4 py-2">
+                  <a href={`tel:${order.phone}`} className="hover:text-gold">
+                    {order.phone}
+                  </a>
+                </td>
                 <td className="px-4 py-2">{formatTaka(order.total)}</td>
-                <td className="px-4 py-2">{statusLabel[order.status]}</td>
+                <td className="px-4 py-2">{statusLabel[order.status] ?? order.status}</td>
               </tr>
             ))}
             {!orders.length && (

@@ -38,6 +38,7 @@ import { isSupabaseEnabled } from '@/lib/supabase'
 type StoreContextValue = StoreSnapshot & {
   loading: boolean
   cloud: boolean
+  syncError: string
   saveProduct: (product: Product) => Promise<void>
   deleteProduct: (id: string) => Promise<void>
   placeOrder: (input: CheckoutInput) => Promise<Order>
@@ -62,15 +63,23 @@ function persist(next: StoreSnapshot) {
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [snapshot, setSnapshot] = useState<StoreSnapshot>(() => loadSnapshot())
   const [loading, setLoading] = useState(isSupabaseEnabled)
+  const [syncError, setSyncError] = useState('')
 
   useEffect(() => {
     if (!isSupabaseEnabled) return
     let cancelled = false
     fetchCloudSnapshot()
       .then((cloud) => {
-        if (!cancelled && cloud && cloud.products.length) {
-          setSnapshot(persist(cloud))
-        }
+        if (cancelled || !cloud?.products.length) return
+        setSnapshot((prev) =>
+          persist({
+            ...cloud,
+            messages: cloud.messages.length ? cloud.messages : prev.messages ?? [],
+          }),
+        )
+      })
+      .catch((error: unknown) => {
+        if (!cancelled) setSyncError(error instanceof Error ? error.message : 'Cloud load failed')
       })
       .finally(() => {
         if (!cancelled) setLoading(false)
@@ -84,6 +93,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSnapshot((prev) => persist(updater(prev)))
   }, [])
 
+  const sync = useCallback(async (task: () => Promise<void>) => {
+    try {
+      await task()
+      setSyncError('')
+    } catch (error) {
+      setSyncError(error instanceof Error ? error.message : 'Cloud sync failed')
+    }
+  }, [])
+
   const saveProduct = useCallback(
     async (product: Product) => {
       commit((prev) => ({
@@ -92,17 +110,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ? prev.products.map((item) => (item.id === product.id ? product : item))
           : [product, ...prev.products],
       }))
-      await cloudUpsertProduct(product)
+      await sync(() => cloudUpsertProduct(product))
     },
-    [commit],
+    [commit, sync],
   )
 
   const deleteProduct = useCallback(
     async (id: string) => {
       commit((prev) => ({ ...prev, products: prev.products.filter((item) => item.id !== id) }))
-      await cloudDeleteProduct(id)
+      await sync(() => cloudDeleteProduct(id))
     },
-    [commit],
+    [commit, sync],
   )
 
   const placeOrder = useCallback(
@@ -125,10 +143,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         createdAt: new Date().toISOString(),
       }
       commit((prev) => ({ ...prev, orders: [order, ...prev.orders] }))
-      await cloudInsertOrder(order)
+      await sync(() => cloudInsertOrder(order))
       return order
     },
-    [commit],
+    [commit, sync],
   )
 
   const updateOrderStatus = useCallback(
@@ -137,17 +155,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         ...prev,
         orders: prev.orders.map((order) => (order.id === id ? { ...order, status } : order)),
       }))
-      await cloudUpdateOrderStatus(id, status)
+      await sync(() => cloudUpdateOrderStatus(id, status))
     },
-    [commit],
+    [commit, sync],
   )
 
   const deleteOrder = useCallback(
     async (id: string) => {
       commit((prev) => ({ ...prev, orders: prev.orders.filter((order) => order.id !== id) }))
-      await cloudDeleteOrder(id)
+      await sync(() => cloudDeleteOrder(id))
     },
-    [commit],
+    [commit, sync],
   )
 
   const saveSlide = useCallback(
@@ -158,17 +176,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ? prev.slides.map((item) => (item.id === slide.id ? slide : item))
           : [...prev.slides, slide],
       }))
-      await cloudUpsertSlide(slide)
+      await sync(() => cloudUpsertSlide(slide))
     },
-    [commit],
+    [commit, sync],
   )
 
   const deleteSlide = useCallback(
     async (id: string) => {
       commit((prev) => ({ ...prev, slides: prev.slides.filter((item) => item.id !== id) }))
-      await cloudDeleteSlide(id)
+      await sync(() => cloudDeleteSlide(id))
     },
-    [commit],
+    [commit, sync],
   )
 
   const saveMedia = useCallback(
@@ -179,25 +197,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           ? prev.media.map((row) => (row.id === item.id ? item : row))
           : [...prev.media, item],
       }))
-      await cloudUpsertMedia(item)
+      await sync(() => cloudUpsertMedia(item))
     },
-    [commit],
+    [commit, sync],
   )
 
   const deleteMedia = useCallback(
     async (id: string) => {
       commit((prev) => ({ ...prev, media: prev.media.filter((item) => item.id !== id) }))
-      await cloudDeleteMedia(id)
+      await sync(() => cloudDeleteMedia(id))
     },
-    [commit],
+    [commit, sync],
   )
 
   const saveLanding = useCallback(
     async (landing: LandingContent) => {
       commit((prev) => ({ ...prev, landing }))
-      await cloudSaveLanding(landing)
+      await sync(() => cloudSaveLanding(landing))
     },
-    [commit],
+    [commit, sync],
   )
 
   const addMessage = useCallback(
@@ -211,7 +229,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       commit((prev) => ({ ...prev, messages: [message, ...(prev.messages ?? [])] }))
       return message
     },
-    [commit],
+    [commit, sync],
   )
 
   const markMessageRead = useCallback(
@@ -221,7 +239,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         messages: (prev.messages ?? []).map((item) => (item.id === id ? { ...item, read: true } : item)),
       }))
     },
-    [commit],
+    [commit, sync],
   )
 
   const deleteMessage = useCallback(
@@ -231,7 +249,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         messages: (prev.messages ?? []).filter((item) => item.id !== id),
       }))
     },
-    [commit],
+    [commit, sync],
   )
 
   const value = useMemo<StoreContextValue>(
@@ -240,6 +258,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       messages: snapshot.messages ?? [],
       loading,
       cloud: isSupabaseEnabled,
+      syncError,
       saveProduct,
       deleteProduct,
       placeOrder,
@@ -257,6 +276,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [
       snapshot,
       loading,
+      syncError,
       saveProduct,
       deleteProduct,
       placeOrder,

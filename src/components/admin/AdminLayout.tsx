@@ -13,7 +13,9 @@ import {
   PanelsTopLeft,
   X,
 } from 'lucide-react'
+import { ConfirmProvider } from '@/components/admin/ConfirmDialog'
 import { useAuth } from '@/context/AuthContext'
+import { useStore } from '@/context/StoreContext'
 
 const links = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -35,6 +37,31 @@ export function AdminLayout() {
   )
 
   if (!isAdmin) return <Navigate to="/admin/login" replace />
+
+  return (
+    <ConfirmProvider>
+      <AdminShell
+        current={current}
+        logout={logout}
+        open={open}
+        setOpen={setOpen}
+      />
+    </ConfirmProvider>
+  )
+}
+
+function AdminShell({
+  current,
+  logout,
+  open,
+  setOpen,
+}: {
+  current: (typeof links)[number] | undefined
+  logout: () => Promise<void>
+  open: boolean
+  setOpen: (value: boolean | ((prev: boolean) => boolean)) => void
+}) {
+  const { syncError } = useStore()
 
   return (
     <div className="min-h-svh bg-[#0f1714] text-zinc-100">
@@ -108,6 +135,11 @@ export function AdminLayout() {
               </nav>
             )}
           </div>
+          {syncError ? (
+            <p className="mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-sm text-amber-200">
+              Saved on this device. Cloud sync: {syncError}
+            </p>
+          ) : null}
           <Outlet />
         </div>
       </div>

@@ -23,7 +23,7 @@ export const SITE = {
   address: 'নাটোর সদর, নাটোর, বাংলাদেশ',
   hours: 'WhatsApp / Imo — সারাদিন যোগাযোগ করুন',
   facebook: 'https://www.facebook.com/share/1CnLBxJqHr/',
-  logo: '/images/logo.svg',
+  logo: '/js-agro-shop-logo.png',
   followers: '২০ হাজার ফলোয়ার',
 }
 

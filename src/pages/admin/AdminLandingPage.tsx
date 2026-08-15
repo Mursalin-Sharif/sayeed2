@@ -22,6 +22,8 @@ export function AdminLandingPage() {
         whyItems: form.whyItems.map((item) => item.trim()).filter(Boolean),
       })
       setNotice('Landing page saved.')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Save failed')
     } finally {
       setSaving(false)
     }
@@ -30,7 +32,11 @@ export function AdminLandingPage() {
   return (
     <form onSubmit={onSubmit} className="max-w-3xl space-y-4">
       <h1 className="font-display text-3xl text-gold">Landing page content</h1>
-      {notice ? <p className="text-sm font-semibold text-emerald-400">{notice}</p> : null}
+      {notice ? (
+        <p className={`text-sm font-semibold ${notice.includes('saved') ? 'text-emerald-400' : 'text-red-400'}`}>
+          {notice}
+        </p>
+      ) : null}
       <label className="block text-sm text-zinc-400">
         Hero title
         <input
@@ -124,7 +130,7 @@ export function AdminLandingPage() {
         <select
           value={form.offerProductId}
           onChange={(e) => setForm({ ...form, offerProductId: e.target.value })}
-          className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+          className="admin-select mt-1 w-full rounded-xl bg-[#0b1210] px-3 py-3 text-zinc-100"
         >
           {products.map((product) => (
             <option key={product.id} value={product.id}>

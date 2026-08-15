@@ -1,8 +1,10 @@
+import { useConfirm } from '@/components/admin/ConfirmDialog'
 import { useStore } from '@/context/StoreContext'
-import { confirmDelete, formatDate } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 
 export function AdminMessagesPage() {
   const { messages, markMessageRead, deleteMessage } = useStore()
+  const confirm = useConfirm()
   const list = messages ?? []
 
   return (
@@ -19,7 +21,9 @@ export function AdminMessagesPage() {
               <div>
                 <p className="font-bold">{item.name}</p>
                 <p className="text-sm text-zinc-400">
-                  {item.phone}
+                  <a href={`tel:${item.phone}`} className="hover:text-gold">
+                    {item.phone}
+                  </a>
                   {item.email ? ` · ${item.email}` : ''}
                 </p>
                 <p className="text-xs text-zinc-500">{formatDate(item.createdAt)}</p>
@@ -34,8 +38,10 @@ export function AdminMessagesPage() {
                   type="button"
                   className="text-red-400"
                   onClick={() => {
-                    if (!confirmDelete(item.name)) return
-                    void deleteMessage(item.id)
+                    void (async () => {
+                      if (!(await confirm(`Delete message from ${item.name}? This cannot be undone.`))) return
+                      await deleteMessage(item.id)
+                    })()
                   }}
                 >
                   Delete

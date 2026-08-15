@@ -27,7 +27,11 @@ export function AdminCustomersPage() {
                   <p className="font-semibold">{customer.name}</p>
                   <p className="text-xs text-zinc-500">{customer.address}</p>
                 </td>
-                <td className="px-4 py-3">{customer.phone}</td>
+                <td className="px-4 py-3">
+                  <a href={`tel:${customer.phone}`} className="hover:text-gold">
+                    {customer.phone}
+                  </a>
+                </td>
                 <td className="px-4 py-3">{customer.district}</td>
                 <td className="px-4 py-3">{customer.orderCount}</td>
                 <td className="px-4 py-3">{formatTaka(customer.totalSpent)}</td>

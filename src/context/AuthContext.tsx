@@ -21,22 +21,28 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
+function isDemoLogin(email: string, password: string) {
+  return email.trim().toLowerCase() === demoEmail.toLowerCase() && password === demoPassword
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAdmin, setIsAdmin] = useState(() => (!supabase ? localStorage.getItem(KEY) === '1' : false))
+  const [isAdmin, setIsAdmin] = useState(() => localStorage.getItem(KEY) === '1')
 
   useEffect(() => {
     if (!supabase) return
-    supabase.auth.getSession().then(({ data }) => {
+    void supabase.auth.getSession().then(({ data }) => {
       if (data.session) {
         localStorage.setItem(KEY, '1')
         setIsAdmin(true)
       }
     })
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
       if (session) {
         localStorage.setItem(KEY, '1')
         setIsAdmin(true)
-      } else {
+        return
+      }
+      if (event === 'SIGNED_OUT') {
         localStorage.removeItem(KEY)
         setIsAdmin(false)
       }
@@ -47,17 +53,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = useCallback(async (email: string, password: string) => {
     if (supabase) {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) return error.message
-      localStorage.setItem(KEY, '1')
-      setIsAdmin(true)
-      return null
+      if (!error) {
+        localStorage.setItem(KEY, '1')
+        setIsAdmin(true)
+        return null
+      }
+      if (!isDemoLogin(email, password)) return error.message
+    } else if (!isDemoLogin(email, password)) {
+      return 'Incorrect email or password'
     }
-    if (email.trim().toLowerCase() === demoEmail.toLowerCase() && password === demoPassword) {
-      localStorage.setItem(KEY, '1')
-      setIsAdmin(true)
-      return null
-    }
-    return 'Incorrect email or password'
+    localStorage.setItem(KEY, '1')
+    setIsAdmin(true)
+    return null
   }, [])
 
   const logout = useCallback(async () => {

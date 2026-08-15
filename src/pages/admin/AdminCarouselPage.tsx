@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
+import { useConfirm } from '@/components/admin/ConfirmDialog'
 import { AdminUploadField } from '@/components/admin/AdminUploadField'
+import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
 import type { CarouselSlide } from '@/lib/types'
-import { confirmDelete, uid } from '@/lib/utils'
+import { uid } from '@/lib/utils'
 
 const empty = {
   image: '',
@@ -16,6 +18,7 @@ const empty = {
 
 export function AdminCarouselPage() {
   const { slides, saveSlide, deleteSlide } = useStore()
+  const confirm = useConfirm()
   const [form, setForm] = useState(empty)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -38,13 +41,15 @@ export function AdminCarouselPage() {
       await saveSlide(slide)
       setNotice(editingId ? 'Slide updated.' : 'Slide saved.')
       resetForm()
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Save failed')
     } finally {
       setSaving(false)
     }
   }
 
   async function onDelete(slide: CarouselSlide) {
-    if (!confirmDelete(slide.title || 'this slide')) return
+    if (!(await confirm(`Delete ${slide.title || 'this slide'}? This cannot be undone.`))) return
     await deleteSlide(slide.id)
     if (editingId === slide.id) resetForm()
     setNotice('Slide deleted.')
@@ -61,7 +66,7 @@ export function AdminCarouselPage() {
             .sort((a, b) => a.sortOrder - b.sortOrder)
             .map((slide) => (
               <article key={slide.id} className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-3">
-                <img src={slide.image} alt="" className="h-20 w-28 rounded-xl object-cover" />
+                <SafeImage src={slide.image} alt="" className="h-20 w-28 rounded-xl object-cover" />
                 <div className="flex-1">
                   <p className="font-semibold">{slide.title}</p>
                   <p className="text-xs text-zinc-400">{slide.subtitle}</p>

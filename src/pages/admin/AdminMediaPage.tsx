@@ -1,8 +1,19 @@
 import { useState, type FormEvent } from 'react'
+import { useConfirm } from '@/components/admin/ConfirmDialog'
 import { AdminUploadField } from '@/components/admin/AdminUploadField'
 import { useStore } from '@/context/StoreContext'
 import type { LandingMedia } from '@/lib/types'
-import { confirmDelete, uid } from '@/lib/utils'
+import { uid } from '@/lib/utils'
+
+function youtubeId(url: string) {
+  const embed = url.match(/embed\/([a-zA-Z0-9_-]+)/)
+  if (embed) return embed[1]
+  const watch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/)
+  if (watch) return watch[1]
+  const short = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)
+  if (short) return short[1]
+  return null
+}
 
 const empty = {
   type: 'image' as LandingMedia['type'],
@@ -15,6 +26,7 @@ const empty = {
 
 export function AdminMediaPage() {
   const { media, saveMedia, deleteMedia } = useStore()
+  const confirm = useConfirm()
   const [form, setForm] = useState(empty)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -33,13 +45,15 @@ export function AdminMediaPage() {
       await saveMedia({ id: editingId ?? uid('media'), ...form })
       setNotice(editingId ? 'Media updated.' : 'Media saved.')
       resetForm()
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Save failed')
     } finally {
       setSaving(false)
     }
   }
 
   async function onDelete(item: LandingMedia) {
-    if (!confirmDelete(item.title || 'this file')) return
+    if (!(await confirm(`Delete ${item.title || 'this file'}? This cannot be undone.`))) return
     await deleteMedia(item.id)
     if (editingId === item.id) resetForm()
     setNotice('Media deleted.')
@@ -58,7 +72,19 @@ export function AdminMediaPage() {
             .map((item) => (
               <article key={item.id} className="overflow-hidden rounded-2xl border border-white/10 bg-white/5">
                 {item.type === 'video' ? (
-                  <div className="aspect-video bg-black text-center text-sm leading-[12rem] text-zinc-400">Video</div>
+                  <div className="aspect-video bg-black">
+                    {youtubeId(item.url) ? (
+                      <iframe
+                        className="size-full"
+                        src={`https://www.youtube.com/embed/${youtubeId(item.url)}`}
+                        title={item.title}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    ) : (
+                      <video src={item.url} controls className="size-full object-cover" />
+                    )}
+                  </div>
                 ) : (
                   <img src={item.url} alt={item.title} className="aspect-video w-full object-cover" />
                 )}

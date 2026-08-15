@@ -21,9 +21,9 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className="min-h-svh bg-cream pb-[calc(55px+env(safe-area-inset-bottom,0px))] text-ink lg:pb-0">
       <header className="border-b border-leaf/10 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
-          <Link to="/" className="flex items-center gap-3">
-            <LogoMark className="size-12 shrink-0 drop-shadow-md" />
-            <span className="font-display block text-2xl leading-none text-leaf">{SITE.name}</span>
+          <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
+            <LogoMark className="h-[4.75rem] w-[4.75rem] sm:h-20 sm:w-20 lg:h-[5.5rem] lg:w-[5.5rem]" />
+            <span className="font-display block truncate text-lg leading-none text-leaf sm:text-2xl">{SITE.name}</span>
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex">

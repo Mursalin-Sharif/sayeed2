@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react'
+import { useConfirm } from '@/components/admin/ConfirmDialog'
 import { useStore } from '@/context/StoreContext'
 import { SHIPPING } from '@/lib/districts'
 import type { OrderStatus } from '@/lib/types'
-import { confirmDelete, formatDate, formatTaka } from '@/lib/utils'
+import { formatDate, formatTaka } from '@/lib/utils'
 
 const statuses: OrderStatus[] = [
   'pending',
@@ -24,6 +25,7 @@ const statusLabel: Record<OrderStatus, string> = {
 
 export function AdminOrdersPage() {
   const { orders, updateOrderStatus, deleteOrder } = useStore()
+  const confirm = useConfirm()
   const [filter, setFilter] = useState<'all' | OrderStatus>('all')
   const [openId, setOpenId] = useState<string | null>(null)
   const list = useMemo(
@@ -69,7 +71,7 @@ export function AdminOrdersPage() {
                 <select
                   value={order.status}
                   onChange={(e) => void updateOrderStatus(order.id, e.target.value as OrderStatus)}
-                  className="mt-1 rounded-lg bg-black/40 px-2 py-1 text-sm"
+                  className="admin-select mt-1 rounded-lg bg-[#0b1210] px-2 py-1 text-sm text-zinc-100"
                 >
                   {statuses.map((status) => (
                     <option key={status} value={status}>
@@ -90,8 +92,10 @@ export function AdminOrdersPage() {
               type="button"
               className="ml-4 mt-3 text-sm text-red-400"
               onClick={() => {
-                if (!confirmDelete(order.customerName)) return
-                void deleteOrder(order.id)
+                void (async () => {
+                  if (!(await confirm(`Delete order for ${order.customerName}? This cannot be undone.`))) return
+                  await deleteOrder(order.id)
+                })()
               }}
             >
               Delete

@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react'
+import { useConfirm } from '@/components/admin/ConfirmDialog'
 import { AdminGalleryUpload, AdminUploadField } from '@/components/admin/AdminUploadField'
+import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
 import type { Product } from '@/lib/types'
-import { confirmDelete, formatTaka, uid } from '@/lib/utils'
+import { formatTaka, uid } from '@/lib/utils'
 
 const empty: Omit<Product, 'id' | 'createdAt'> = {
   name: '',
@@ -19,14 +21,17 @@ const empty: Omit<Product, 'id' | 'createdAt'> = {
 
 export function AdminProductsPage() {
   const { products, saveProduct, deleteProduct } = useStore()
+  const confirm = useConfirm()
   const [editing, setEditing] = useState<Product | null>(null)
   const [form, setForm] = useState(empty)
   const [galleryText, setGalleryText] = useState('')
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
+  const [error, setError] = useState('')
 
   function startEdit(product?: Product) {
     setNotice('')
+    setError('')
     if (product) {
       setEditing(product)
       setForm({
@@ -53,6 +58,7 @@ export function AdminProductsPage() {
     event.preventDefault()
     setSaving(true)
     setNotice('')
+    setError('')
     try {
       const product: Product = {
         id: editing?.id ?? uid('prod'),
@@ -69,16 +75,19 @@ export function AdminProductsPage() {
       setForm(empty)
       setGalleryText('')
       setNotice(message)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSaving(false)
     }
   }
 
   async function onDelete(product: Product) {
-    if (!confirmDelete(product.name)) return
+    if (!(await confirm(`Delete ${product.name}? This cannot be undone.`))) return
     await deleteProduct(product.id)
     if (editing?.id === product.id) startEdit()
     setNotice('Product deleted.')
+    setError('')
   }
 
   return (
@@ -100,7 +109,7 @@ export function AdminProductsPage() {
                 <tr key={product.id} className="border-t border-white/10">
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-3">
-                      <img src={product.image} alt="" className="size-12 rounded-lg object-cover" />
+                      <SafeImage src={product.image} alt="" className="size-12 rounded-lg object-cover" />
                       <div>
                         <p className="font-semibold">{product.name}</p>
                         <p className="text-xs text-zinc-400">{product.headline}</p>
@@ -126,6 +135,7 @@ export function AdminProductsPage() {
       <form onSubmit={onSubmit} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
         <h2 className="font-semibold">{editing ? 'Edit product' : 'New product'}</h2>
         {notice ? <p className="text-sm font-semibold text-emerald-400">{notice}</p> : null}
+        {error ? <p className="text-sm font-semibold text-red-400">{error}</p> : null}
         <input
           placeholder="Name"
           value={form.name}
