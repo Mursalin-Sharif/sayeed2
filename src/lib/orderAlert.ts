@@ -213,11 +213,10 @@ export async function notifyDesktopOrder(order: Order) {
         icon: '/js-agro-shop-logo.png',
         badge: '/js-agro-shop-logo.png',
         tag,
-        renotify: true,
         silent: false,
         requireInteraction: true,
         data: { url: '/admin/orders' },
-      })
+      } as NotificationOptions)
       return
     }
   } catch {
