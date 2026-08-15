@@ -62,12 +62,13 @@ export function AdminOrdersPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-bold">{order.customerName}</p>
-                <p className="text-sm text-zinc-400">
+                <p className="text-sm text-gold">
                   {order.items.map((item) => `${item.name} × ${item.quantity}`).join(', ')}
                 </p>
                 <p className="text-sm text-zinc-400">
-                  {order.phone} · {order.district} · {formatDate(order.createdAt)}
+                  {order.phone} · {order.address}, {order.district}
                 </p>
+                <p className="text-xs text-zinc-500">{formatDate(order.createdAt)}</p>
               </div>
               <div className="text-right">
                 <p className="font-extrabold text-gold">{formatTaka(order.total)}</p>

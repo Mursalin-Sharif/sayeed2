@@ -7,6 +7,27 @@ function money(items: OrderItem[], shippingFee: number) {
   return { subtotal, total: subtotal + shippingFee }
 }
 
+function normText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, ' ')
+}
+
+function isOpenOrder(order: Order) {
+  return order.status === 'pending'
+}
+
+function sameBuyer(order: Order, name: string, phone: string, address: string, district: string) {
+  return (
+    normalizeBdPhone(order.phone) === phone &&
+    normText(order.customerName) === normText(name) &&
+    normText(order.address) === normText(address) &&
+    normText(order.district) === normText(district)
+  )
+}
+
+function isSameProductOrder(order: Order, productId: string) {
+  return order.items.length > 0 && order.items.every((item) => item.productId === productId)
+}
+
 function addItems(existing: OrderItem[], incoming: OrderItem[]): OrderItem[] {
   const next = existing.map((item) => ({ ...item }))
   for (const item of incoming) {
@@ -28,6 +49,8 @@ function addItems(existing: OrderItem[], incoming: OrderItem[]): OrderItem[] {
 
 export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
   const phone = normalizeBdPhone(input.phone)
+  const name = input.customerName.trim()
+  const address = input.address.trim()
   let next = [...orders]
   const leftover: OrderItem[] = []
   const mergeById = new Map<string, OrderItem[]>()
@@ -35,9 +58,9 @@ export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
   for (const item of input.items) {
     const target = next.find(
       (order) =>
-        order.status === 'pending' &&
-        normalizeBdPhone(order.phone) === phone &&
-        order.items.some((row) => row.productId === item.productId),
+        isOpenOrder(order) &&
+        sameBuyer(order, name, phone, address, input.district) &&
+        isSameProductOrder(order, item.productId),
     )
     if (target) {
       const bucket = mergeById.get(target.id) ?? []
@@ -57,9 +80,6 @@ export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
       const patched: Order = {
         ...order,
         items: mergedItems,
-        customerName: input.customerName.trim() || order.customerName,
-        address: input.address.trim() || order.address,
-        district: input.district || order.district,
         ...totals,
       }
       updated.push(patched)
@@ -73,9 +93,9 @@ export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
     const created: Order = {
       id: uid('ord'),
       items: leftover,
-      customerName: input.customerName.trim(),
+      customerName: name,
       phone,
-      address: input.address.trim(),
+      address,
       district: input.district,
       shippingType: input.shippingType,
       shippingFee,
