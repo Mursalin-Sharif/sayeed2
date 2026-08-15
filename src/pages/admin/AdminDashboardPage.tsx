@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import { SITE } from '@/lib/seed'
+import { groupOrdersForAdmin } from '@/lib/mergeOrder'
 import { cn, formatDate, formatTaka } from '@/lib/utils'
 
 const statusLabel: Record<string, string> = {
@@ -34,6 +35,7 @@ const statusClass: Record<string, string> = {
 
 export function AdminDashboardPage() {
   const { orders, products, customers, messages } = useStore()
+  const groupedOrders = groupOrdersForAdmin(orders)
   const revenue = orders
     .filter((order) => order.status !== 'cancelled')
     .reduce((sum, order) => sum + order.total, 0)
@@ -144,31 +146,31 @@ export function AdminDashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {orders.slice(0, 8).map((order) => (
-                  <tr key={order.id} className="border-t border-white/10 hover:bg-white/[0.03]">
+                {groupedOrders.slice(0, 8).map((row) => (
+                  <tr key={row.key} className="border-t border-white/10 hover:bg-white/[0.03]">
                     <td className="px-5 py-3">
                       <Link to="/admin/orders" className="font-semibold hover:text-gold">
-                        {order.customerName}
+                        {row.order.customerName}
                       </Link>
                       <p className="text-xs text-zinc-500">
-                        {order.items.map((item) => `${item.name} × ${item.quantity}`).join(', ')}
+                        {row.order.items.map((item) => `${item.name} × ${item.quantity}`).join(', ')}
                       </p>
-                      <p className="text-xs text-zinc-500">{formatDate(order.createdAt)}</p>
+                      <p className="text-xs text-zinc-500">{formatDate(row.order.createdAt)}</p>
                     </td>
                     <td className="px-5 py-3">
-                      <a href={`tel:${order.phone}`} className="hover:text-gold">
-                        {order.phone}
+                      <a href={`tel:${row.order.phone}`} className="hover:text-gold">
+                        {row.order.phone}
                       </a>
                     </td>
-                    <td className="px-5 py-3 font-semibold text-gold">{formatTaka(order.total)}</td>
+                    <td className="px-5 py-3 font-semibold text-gold">{formatTaka(row.order.total)}</td>
                     <td className="px-5 py-3">
                       <span
                         className={cn(
                           'inline-flex rounded-full px-2.5 py-1 text-xs font-semibold',
-                          statusClass[order.status] ?? 'bg-white/10 text-zinc-300',
+                          statusClass[row.order.status] ?? 'bg-white/10 text-zinc-300',
                         )}
                       >
-                        {statusLabel[order.status] ?? order.status}
+                        {statusLabel[row.order.status] ?? row.order.status}
                       </span>
                     </td>
                   </tr>

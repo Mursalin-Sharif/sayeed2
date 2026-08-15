@@ -192,9 +192,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const placeOrder = useCallback(
     async (input: CheckoutInput) => {
+      const remote = await fetchCloudOrders()
       let outcome: ReturnType<typeof applyIncomingOrder> | null = null
       commit((prev) => {
-        outcome = applyIncomingOrder(prev.orders, input)
+        outcome = applyIncomingOrder(remote ?? prev.orders, input)
         return { ...prev, orders: outcome.orders }
       })
       if (!outcome) throw new Error('Order failed')

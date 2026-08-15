@@ -95,6 +95,9 @@ create policy "public read media" on landing_media for select using (true);
 create policy "public read landing" on landing_content for select using (true);
 create policy "public read orders" on orders for select using (true);
 create policy "public create orders" on orders for insert with check (true);
+drop policy if exists "public update pending orders" on orders;
+create policy "public update pending orders" on orders
+  for update using (status = 'pending') with check (status = 'pending');
 
 create policy "admin all products" on products for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 create policy "admin all orders" on orders for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');

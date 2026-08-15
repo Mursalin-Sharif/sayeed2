@@ -15,11 +15,10 @@ function isOpenOrder(order: Order) {
   return order.status === 'pending'
 }
 
-function sameBuyer(order: Order, name: string, phone: string, address: string, district: string) {
+function sameBuyer(order: Order, name: string, phone: string, district: string) {
   return (
     normalizeBdPhone(order.phone) === phone &&
     normText(order.customerName) === normText(name) &&
-    normText(order.address) === normText(address) &&
     normText(order.district) === normText(district)
   )
 }
@@ -47,6 +46,64 @@ function addItems(existing: OrderItem[], incoming: OrderItem[]): OrderItem[] {
   return next
 }
 
+function productKey(order: Order) {
+  return [...new Set(order.items.map((item) => item.productId))].sort().join(',')
+}
+
+export function pendingGroupKey(order: Order) {
+  return [
+    normText(order.customerName),
+    normalizeBdPhone(order.phone),
+    normText(order.district),
+    productKey(order),
+  ].join('|')
+}
+
+export function combineOrders(orders: Order[]): Order {
+  const [first] = orders
+  const items = orders.reduce((all, order) => addItems(all, order.items), [] as OrderItem[])
+  const totals = money(items, first.shippingFee)
+  const addresses = [...new Set(orders.map((order) => order.address.trim()).filter(Boolean))]
+  return {
+    ...first,
+    items,
+    address: addresses.join(' · ') || first.address,
+    ...totals,
+  }
+}
+
+export type OrderRow = {
+  key: string
+  ids: string[]
+  order: Order
+}
+
+export function groupOrdersForAdmin(orders: Order[]): OrderRow[] {
+  const pending = new Map<string, Order[]>()
+  const rows: OrderRow[] = []
+
+  for (const order of orders) {
+    if (isOpenOrder(order)) {
+      const key = pendingGroupKey(order)
+      const list = pending.get(key) ?? []
+      list.push(order)
+      pending.set(key, list)
+      continue
+    }
+    rows.push({ key: order.id, ids: [order.id], order })
+  }
+
+  for (const [key, list] of pending) {
+    rows.push({
+      key,
+      ids: list.map((order) => order.id),
+      order: combineOrders(list),
+    })
+  }
+
+  return rows.sort((a, b) => b.order.createdAt.localeCompare(a.order.createdAt))
+}
+
 export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
   const phone = normalizeBdPhone(input.phone)
   const name = input.customerName.trim()
@@ -59,7 +116,7 @@ export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
     const target = next.find(
       (order) =>
         isOpenOrder(order) &&
-        sameBuyer(order, name, phone, address, input.district) &&
+        sameBuyer(order, name, phone, input.district) &&
         isSameProductOrder(order, item.productId),
     )
     if (target) {
