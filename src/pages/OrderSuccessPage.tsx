@@ -26,6 +26,13 @@ export function OrderSuccessPage() {
           <p className="mt-3">{order.customerName} · {order.phone}</p>
           <p className="text-sm">{order.address}, {order.district}</p>
           <p className="text-sm">শিপিং: {SHIPPING[order.shippingType]?.label ?? order.shippingType} ({formatTaka(order.shippingFee)})</p>
+          <div className="mt-3 space-y-1 text-sm">
+            {order.items.map((item) => (
+              <p key={item.productId}>
+                {item.name} × {item.quantity}
+              </p>
+            ))}
+          </div>
           <p className="mt-3 text-xl font-extrabold text-leaf">{formatTaka(order.total)}</p>
         </div>
       )}

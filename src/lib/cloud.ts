@@ -210,6 +210,27 @@ export async function cloudInsertOrder(order: Order) {
   fail(error)
 }
 
+export async function cloudUpdateOrder(order: Order) {
+  if (!supabase) return
+  const { error } = await supabase
+    .from('orders')
+    .update({
+      items: order.items,
+      customer_name: order.customerName,
+      phone: order.phone,
+      address: order.address,
+      district: order.district,
+      shipping_type: order.shippingType,
+      shipping_fee: order.shippingFee,
+      subtotal: order.subtotal,
+      total: order.total,
+      status: order.status,
+      notes: order.notes,
+    })
+    .eq('id', order.id)
+  fail(error)
+}
+
 export async function cloudUpdateOrderStatus(id: string, status: Order['status']) {
   if (!supabase) return
   const { error } = await supabase.from('orders').update({ status }).eq('id', id)

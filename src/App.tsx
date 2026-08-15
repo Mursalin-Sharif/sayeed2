@@ -19,6 +19,9 @@ import { AdminMediaPage } from '@/pages/admin/AdminMediaPage'
 import { AdminLandingPage } from '@/pages/admin/AdminLandingPage'
 import { AdminCarouselPage } from '@/pages/admin/AdminCarouselPage'
 
+import { OrderAlertHost } from '@/components/admin/OrderAlertHost'
+import { useAuth } from '@/context/AuthContext'
+
 function Storefront({ children }: { children: ReactNode }) {
   return <Layout>{children}</Layout>
 }
@@ -37,10 +40,17 @@ function ScrollManager() {
   return null
 }
 
+function AdminAlerts() {
+  const { isAdmin } = useAuth()
+  if (!isAdmin) return null
+  return <OrderAlertHost />
+}
+
 export default function App() {
   return (
     <BrowserRouter>
       <ScrollManager />
+      <AdminAlerts />
       <Routes>
         <Route path="/" element={<Storefront><HomePage /></Storefront>} />
         <Route path="/product/:id" element={<Storefront><ProductPage /></Storefront>} />

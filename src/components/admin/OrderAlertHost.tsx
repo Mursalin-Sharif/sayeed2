@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { BellRing, Volume2, VolumeX, X } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import {
+  enableAdminAlerts,
   isOrderAlertUnlocked,
   isOrderSoundEnabled,
   notifyDesktopOrder,
@@ -18,30 +19,58 @@ import { formatTaka } from '@/lib/utils'
 
 type Toast = { id: string; order: Order }
 
+function orderFingerprint(order: Order) {
+  return `${order.id}:${order.items.map((item) => `${item.productId}x${item.quantity}`).join(',')}`
+}
+
 export function OrderAlertHost() {
   const { orders, loading, cloud } = useStore()
+  const { pathname } = useLocation()
+  const onAdmin = pathname.startsWith('/admin')
   const primed = useRef(false)
-  const seen = useRef(new Set<string>())
+  const seen = useRef(new Map<string, string>())
   const [ready, setReady] = useState(!cloud)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [needClick, setNeedClick] = useState(false)
   const [soundOn, setSoundOn] = useState(() => isOrderSoundEnabled())
+  const [notifyOn, setNotifyOn] = useState(
+    () => typeof Notification === 'undefined' || Notification.permission === 'granted',
+  )
+
+  useEffect(() => {
+    void enableAdminAlerts().then(() => {
+      setNotifyOn(typeof Notification === 'undefined' || Notification.permission === 'granted')
+    })
+  }, [])
 
   useEffect(() => {
     const unlock = () => {
       unlockOrderAlertAudio()
-      requestOrderAlertPermission()
+      void requestOrderAlertPermission().then((status) => {
+        setNotifyOn(status === 'granted')
+      })
       setNeedClick(false)
     }
-    window.addEventListener('pointerdown', unlock, { once: true })
-    return () => window.removeEventListener('pointerdown', unlock)
+    window.addEventListener('pointerdown', unlock)
+    window.addEventListener('keydown', unlock)
+    return () => {
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', unlock)
+    }
   }, [])
 
   useEffect(() => {
-    const onFocus = () => stopOrderTitleFlash()
-    window.addEventListener('focus', onFocus)
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        unlockOrderAlertAudio()
+        stopOrderTitleFlash()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('focus', onVisible)
     return () => {
-      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('focus', onVisible)
       stopOrderTitleFlash()
     }
   }, [])
@@ -59,20 +88,20 @@ export function OrderAlertHost() {
   useEffect(() => {
     if (!ready) return
     if (!primed.current) {
-      seen.current = new Set(orders.map((order) => order.id))
+      seen.current = new Map(orders.map((order) => [order.id, orderFingerprint(order)]))
       primed.current = true
       return
     }
-    const fresh = orders.filter((order) => !seen.current.has(order.id))
-    for (const order of orders) seen.current.add(order.id)
+    const fresh = orders.filter((order) => seen.current.get(order.id) !== orderFingerprint(order))
+    for (const order of orders) seen.current.set(order.id, orderFingerprint(order))
     if (!fresh.length) return
 
     playOrderAlert()
     if (soundOn && !isOrderAlertUnlocked()) setNeedClick(true)
     startOrderTitleFlash(fresh.length)
     for (const order of fresh) notifyDesktopOrder(order)
-    setToasts((prev) => [...fresh.map((order) => ({ id: order.id, order })), ...prev].slice(0, 4))
-    const ids = fresh.map((order) => order.id)
+    setToasts((prev) => [...fresh.map((order) => ({ id: orderFingerprint(order), order })), ...prev].slice(0, 4))
+    const ids = fresh.map((order) => orderFingerprint(order))
     window.setTimeout(() => {
       setToasts((prev) => {
         const next = prev.filter((item) => !ids.includes(item.id))
@@ -102,22 +131,40 @@ export function OrderAlertHost() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={toggleSound}
-        className="fixed bottom-4 left-4 z-[60] inline-flex items-center gap-2 rounded-full border border-gold/30 bg-[#101a16]/95 px-3 py-2 text-xs font-semibold text-gold shadow-lg backdrop-blur md:bottom-6 md:left-auto md:right-6"
-        aria-label={soundOn ? 'Mute order sound' : 'Enable order sound'}
-      >
-        {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
-        {soundOn ? 'Order sound on' : 'Order sound off'}
-      </button>
+      {!notifyOn ? (
+        <button
+          type="button"
+          onClick={() => {
+            void enableAdminAlerts(true).then(() => {
+              setNotifyOn(Notification.permission === 'granted')
+              unlockOrderAlertAudio()
+              playOrderAlert()
+            })
+          }}
+          className="fixed left-1/2 top-3 z-[80] -translate-x-1/2 rounded-full bg-amber-400 px-4 py-2 text-xs font-bold text-leaf-deep shadow-lg"
+        >
+          Allow order alerts
+        </button>
+      ) : null}
+
+      {onAdmin ? (
+        <button
+          type="button"
+          onClick={toggleSound}
+          className="fixed bottom-4 left-4 z-[60] inline-flex items-center gap-2 rounded-full border border-gold/30 bg-[#101a16]/95 px-3 py-2 text-xs font-semibold text-gold shadow-lg backdrop-blur md:bottom-6 md:left-auto md:right-6"
+          aria-label={soundOn ? 'Mute order sound' : 'Enable order sound'}
+        >
+          {soundOn ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+          {soundOn ? 'Order sound on' : 'Order sound off'}
+        </button>
+      ) : null}
 
       {needClick && soundOn ? (
         <button
           type="button"
           onClick={() => {
             unlockOrderAlertAudio()
-            requestOrderAlertPermission()
+            void requestOrderAlertPermission().then((status) => setNotifyOn(status === 'granted'))
             playOrderAlert()
             setNeedClick(false)
           }}
@@ -141,6 +188,9 @@ export function OrderAlertHost() {
                 <p className="text-xs font-bold tracking-wide text-gold uppercase">নতুন অর্ডার</p>
                 <p className="mt-0.5 truncate font-semibold">{toast.order.customerName}</p>
                 <p className="truncate text-sm text-zinc-300">{toast.order.phone}</p>
+                <p className="mt-1 truncate text-sm text-cream">
+                  {toast.order.items.map((item) => `${item.name} × ${item.quantity}`).join(', ')}
+                </p>
                 <p className="mt-1 font-bold text-gold">{formatTaka(toast.order.total)}</p>
                 <Link
                   to="/admin/orders"

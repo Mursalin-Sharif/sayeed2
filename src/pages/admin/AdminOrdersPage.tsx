@@ -63,6 +63,9 @@ export function AdminOrdersPage() {
               <div>
                 <p className="font-bold">{order.customerName}</p>
                 <p className="text-sm text-zinc-400">
+                  {order.items.map((item) => `${item.name} × ${item.quantity}`).join(', ')}
+                </p>
+                <p className="text-sm text-zinc-400">
                   {order.phone} · {order.district} · {formatDate(order.createdAt)}
                 </p>
               </div>

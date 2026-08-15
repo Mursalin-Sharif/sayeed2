@@ -150,6 +150,9 @@ export function AdminDashboardPage() {
                       <Link to="/admin/orders" className="font-semibold hover:text-gold">
                         {order.customerName}
                       </Link>
+                      <p className="text-xs text-zinc-500">
+                        {order.items.map((item) => `${item.name} × ${item.quantity}`).join(', ')}
+                      </p>
                       <p className="text-xs text-zinc-500">{formatDate(order.createdAt)}</p>
                     </td>
                     <td className="px-5 py-3">

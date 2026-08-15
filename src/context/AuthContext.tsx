@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react'
 import { supabase } from '@/lib/supabase'
+import { enableAdminAlerts } from '@/lib/orderAlert'
 
 const KEY = 'js-agro-shop-admin'
 const demoEmail = import.meta.env.VITE_ADMIN_EMAIL || 'jsagroshop63@gmail.com'
@@ -56,6 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!error) {
         localStorage.setItem(KEY, '1')
         setIsAdmin(true)
+        void enableAdminAlerts(true)
         return null
       }
       if (!isDemoLogin(email, password)) return error.message
@@ -64,6 +66,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     localStorage.setItem(KEY, '1')
     setIsAdmin(true)
+    void enableAdminAlerts(true)
     return null
   }, [])
 

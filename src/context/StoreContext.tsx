@@ -17,7 +17,6 @@ import type {
   Product,
   StoreSnapshot,
 } from '@/lib/types'
-import { SHIPPING } from '@/lib/districts'
 import { uid } from '@/lib/utils'
 import { customersFromOrders, loadSnapshot, onLocalSnapshotChange, saveSnapshot } from '@/lib/localStore'
 import {
@@ -27,6 +26,7 @@ import {
   cloudDeleteSlide,
   cloudInsertOrder,
   cloudSaveLanding,
+  cloudUpdateOrder,
   cloudUpdateOrderStatus,
   cloudUpsertMedia,
   cloudUpsertProduct,
@@ -36,6 +36,7 @@ import {
   subscribeToOrders,
 } from '@/lib/cloud'
 import { isSupabaseEnabled } from '@/lib/supabase'
+import { applyIncomingOrder } from '@/lib/mergeOrder'
 
 type StoreContextValue = StoreSnapshot & {
   loading: boolean
@@ -63,7 +64,9 @@ function persist(next: StoreSnapshot) {
 }
 
 function ordersKey(orders: Order[]) {
-  return orders.map((order) => `${order.id}:${order.status}`).join('|')
+  return orders
+    .map((order) => `${order.id}:${order.status}:${order.items.map((item) => `${item.productId}x${item.quantity}`).join(',')}`)
+    .join('|')
 }
 
 function mergeRemoteOrders(prev: StoreSnapshot, remote: Order[]): StoreSnapshot {
@@ -131,7 +134,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           }
           return persist({
             ...prev,
-            orders: prev.orders.map((item) => (item.id === order.id ? { ...item, status: order.status } : item)),
+            orders: prev.orders.map((item) => (item.id === order.id ? order : item)),
           })
         })
       },
@@ -189,26 +192,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const placeOrder = useCallback(
     async (input: CheckoutInput) => {
-      const shippingFee = SHIPPING[input.shippingType].fee
-      const subtotal = input.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
-      const order: Order = {
-        id: uid('ord'),
-        items: input.items,
-        customerName: input.customerName.trim(),
-        phone: input.phone.trim(),
-        address: input.address.trim(),
-        district: input.district,
-        shippingType: input.shippingType,
-        shippingFee,
-        subtotal,
-        total: subtotal + shippingFee,
-        status: 'pending',
-        notes: input.notes?.trim() ?? '',
-        createdAt: new Date().toISOString(),
-      }
-      commit((prev) => ({ ...prev, orders: [order, ...prev.orders] }))
-      await sync(() => cloudInsertOrder(order))
-      return order
+      let outcome: ReturnType<typeof applyIncomingOrder> | null = null
+      commit((prev) => {
+        outcome = applyIncomingOrder(prev.orders, input)
+        return { ...prev, orders: outcome.orders }
+      })
+      if (!outcome) throw new Error('Order failed')
+      const result = outcome as ReturnType<typeof applyIncomingOrder>
+      await sync(async () => {
+        if (result.inserted) await cloudInsertOrder(result.inserted)
+        for (const order of result.updated) await cloudUpdateOrder(order)
+      })
+      return result.saved
     },
     [commit, sync],
   )

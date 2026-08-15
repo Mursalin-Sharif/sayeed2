@@ -14,7 +14,6 @@ import {
   X,
 } from 'lucide-react'
 import { ConfirmProvider } from '@/components/admin/ConfirmDialog'
-import { OrderAlertHost } from '@/components/admin/OrderAlertHost'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { useAuth } from '@/context/AuthContext'
 import { useStore } from '@/context/StoreContext'
@@ -185,7 +184,6 @@ function AdminShell({
           <Outlet />
         </div>
       </div>
-      <OrderAlertHost />
     </div>
   )
 }
