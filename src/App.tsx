@@ -18,6 +18,7 @@ import { AdminMessagesPage } from '@/pages/admin/AdminMessagesPage'
 import { AdminMediaPage } from '@/pages/admin/AdminMediaPage'
 import { AdminLandingPage } from '@/pages/admin/AdminLandingPage'
 import { AdminCarouselPage } from '@/pages/admin/AdminCarouselPage'
+import { AdminAccountPage } from '@/pages/admin/AdminAccountPage'
 
 import { OrderAlertHost } from '@/components/admin/OrderAlertHost'
 import { MetaPixel } from '@/components/analytics/MetaPixel'
@@ -71,6 +72,7 @@ export default function App() {
           <Route path="media" element={<AdminMediaPage />} />
           <Route path="landing" element={<AdminLandingPage />} />
           <Route path="carousel" element={<AdminCarouselPage />} />
+          <Route path="account" element={<AdminAccountPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -18,11 +18,13 @@ type AuthContextValue = {
   isAdmin: boolean
   login: (email: string, password: string) => Promise<string | null>
   logout: () => Promise<void>
+  changePassword: (currentPassword: string, nextPassword: string) => Promise<string | null>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 function isDemoLogin(email: string, password: string) {
+  if (import.meta.env.PROD) return false
   return email.trim().toLowerCase() === demoEmail.toLowerCase() && password === demoPassword
 }
 
@@ -70,13 +72,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null
   }, [])
 
+  const changePassword = useCallback(async (currentPassword: string, nextPassword: string) => {
+    if (!supabase) return 'Cloud login is not connected, so the password cannot be changed here.'
+    const { data } = await supabase.auth.getUser()
+    const email = data.user?.email
+    if (!email) return 'Log in again with your admin email, then change the password.'
+    const { error: checkError } = await supabase.auth.signInWithPassword({
+      email,
+      password: currentPassword,
+    })
+    if (checkError) return 'Current password is incorrect.'
+    const { error } = await supabase.auth.updateUser({ password: nextPassword })
+    return error?.message ?? null
+  }, [])
+
   const logout = useCallback(async () => {
     localStorage.removeItem(KEY)
     setIsAdmin(false)
     await supabase?.auth.signOut()
   }, [])
 
-  const value = useMemo(() => ({ isAdmin, login, logout }), [isAdmin, login, logout])
+  const value = useMemo(
+    () => ({ isAdmin, login, logout, changePassword }),
+    [isAdmin, login, logout, changePassword],
+  )
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 

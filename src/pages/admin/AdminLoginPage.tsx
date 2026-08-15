@@ -6,8 +6,8 @@ import { SITE } from '@/lib/seed'
 
 export function AdminLoginPage() {
   const { isAdmin, login } = useAuth()
-  const [email, setEmail] = useState('jsagroshop63@gmail.com')
-  const [password, setPassword] = useState('admin123')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -59,7 +59,7 @@ export function AdminLoginPage() {
         >
           {loading ? 'Checking...' : 'Login'}
         </button>
-        <p className="mt-4 text-center text-xs text-ink/50">jsagroshop63@gmail.com / admin123</p>
+        <p className="mt-4 text-center text-xs text-ink/50">Use the admin email and password from Supabase.</p>
       </form>
     </div>
   )

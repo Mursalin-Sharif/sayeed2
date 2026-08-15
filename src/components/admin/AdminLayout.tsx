@@ -9,6 +9,7 @@ import {
   Menu,
   Package,
   ShoppingBag,
+  UserCog,
   Users,
   PanelsTopLeft,
   X,
@@ -29,6 +30,7 @@ const links = [
   { to: '/admin/media', label: 'Media', icon: Images },
   { to: '/admin/landing', label: 'Landing / Pixel', icon: Megaphone },
   { to: '/admin/carousel', label: 'Carousel', icon: PanelsTopLeft },
+  { to: '/admin/account', label: 'Admin account', icon: UserCog },
 ]
 
 export function AdminLayout() {
