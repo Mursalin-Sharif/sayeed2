@@ -1,14 +1,15 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useStore } from '@/context/StoreContext'
+import { normalizeLanding } from '@/lib/seed'
 
 export function AdminLandingPage() {
   const { landing, saveLanding, products } = useStore()
-  const [form, setForm] = useState(landing)
+  const [form, setForm] = useState(() => normalizeLanding(landing))
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
 
   useEffect(() => {
-    setForm(landing)
+    setForm(normalizeLanding(landing))
   }, [landing])
 
   async function onSubmit(event: FormEvent) {
@@ -16,11 +17,13 @@ export function AdminLandingPage() {
     setSaving(true)
     setNotice('')
     try {
-      await saveLanding({
-        ...form,
-        packageItems: form.packageItems.map((item) => item.trim()).filter(Boolean),
-        whyItems: form.whyItems.map((item) => item.trim()).filter(Boolean),
-      })
+      await saveLanding(
+        normalizeLanding({
+          ...form,
+          packageItems: form.packageItems.map((item) => item.trim()).filter(Boolean),
+          whyItems: form.whyItems.map((item) => item.trim()).filter(Boolean),
+        }),
+      )
       setNotice('Landing page saved.')
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Save failed')

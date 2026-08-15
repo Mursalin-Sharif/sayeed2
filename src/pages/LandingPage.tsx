@@ -1,38 +1,51 @@
 import { CheckoutForm } from '@/components/order/CheckoutForm'
 import { useStore } from '@/context/StoreContext'
-import { SITE } from '@/lib/seed'
+import { SITE, normalizeLanding } from '@/lib/seed'
+import type { MouseEvent } from 'react'
 
 function youtubeId(url: string) {
   const embed = url.match(/embed\/([a-zA-Z0-9_-]+)/)
   if (embed) return embed[1]
   const watch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/)
   if (watch) return watch[1]
+  const short = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/)
+  if (short) return short[1]
   if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url
   return null
 }
 
+function scrollToOrder(event: MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault()
+  document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
+
 export function LandingPage() {
   const { landing, media, products } = useStore()
-  const offer = products.find((item) => item.id === landing.offerProductId) ?? products[0]
-  const gallery = media.filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
+  const content = normalizeLanding(landing)
+  const offer =
+    products.find((item) => item.id === content.offerProductId) ??
+    products.find((item) => item.id === 'prod_offer_pack') ??
+    products[0]
+  const gallery = (media ?? []).filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
 
   return (
     <div className="bg-white text-center">
       <section className="bg-leaf px-4 py-14 text-white">
-        <h1 className="mx-auto max-w-4xl font-display text-3xl leading-snug md:text-5xl">{landing.heroTitle}</h1>
-        <p className="mx-auto mt-4 max-w-3xl text-gold">{landing.heroSubtitle}</p>
+        <h1 className="mx-auto max-w-4xl font-display text-3xl leading-snug md:text-5xl">{content.heroTitle}</h1>
+        <p className="mx-auto mt-4 max-w-3xl text-gold">{content.heroSubtitle}</p>
         <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-4 text-leaf">
-          <h2 className="text-xl font-extrabold md:text-2xl">{landing.packageTitle}</h2>
+          <h2 className="text-xl font-extrabold md:text-2xl">{content.packageTitle}</h2>
         </div>
         <ol className="mx-auto mt-8 max-w-xl list-none space-y-2 text-xl font-bold text-gold">
-          {landing.packageItems.map((item, i) => (
-            <li key={item}>
+          {content.packageItems.map((item, i) => (
+            <li key={`${item}-${i}`}>
               {i + 1}। {item}
             </li>
           ))}
         </ol>
         <a
           href="#order-form"
+          onClick={scrollToOrder}
           className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
         >
           অর্ডার করুন
@@ -60,9 +73,9 @@ export function LandingPage() {
 
       <section className="px-4 py-12">
         <h2 className="mx-auto mb-6 max-w-4xl rounded-xl bg-leaf py-3 text-xl font-bold text-gold md:text-2xl">
-          {landing.storyTitle}
+          {content.storyTitle}
         </h2>
-        <p className="mx-auto max-w-3xl leading-relaxed">{landing.storyBody}</p>
+        <p className="mx-auto max-w-3xl leading-relaxed">{content.storyBody}</p>
         <div className="mx-auto mt-10 flex max-w-5xl flex-wrap justify-center gap-4">
           {gallery.map((item) => (
             <figure key={item.id} className="w-full max-w-sm overflow-hidden rounded-xl border-4 border-gold bg-leaf-deep sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.7rem)]">
@@ -102,10 +115,10 @@ export function LandingPage() {
       </section>
 
       <section className="bg-leaf px-4 py-12 text-white">
-        <h2 className="text-2xl font-extrabold text-gold">{landing.whyTitle}</h2>
+        <h2 className="text-2xl font-extrabold text-gold">{content.whyTitle}</h2>
         <ul className="mx-auto mt-6 max-w-2xl space-y-3 text-lg">
-          {landing.whyItems.map((item) => (
-            <li key={item} className="rounded-xl bg-white/10 px-4 py-3">
+          {content.whyItems.map((item, i) => (
+            <li key={`${item}-${i}`} className="rounded-xl bg-white/10 px-4 py-3">
               {item}
             </li>
           ))}
@@ -114,20 +127,24 @@ export function LandingPage() {
 
       <section className="bg-gold px-4 py-10">
         <h2 className="text-2xl font-extrabold text-leaf-deep">
-          {landing.paymentTitle} {landing.paymentNumber}
+          {content.paymentTitle} {content.paymentNumber}
         </h2>
-        <p className="mx-auto mt-2 max-w-2xl font-semibold">{landing.paymentNote}</p>
+        <p className="mx-auto mt-2 max-w-2xl font-semibold">{content.paymentNote}</p>
         <p className="mt-1 text-sm">
           হটলাইন: {SITE.phone2} · {SITE.phone}
         </p>
       </section>
 
       <section className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="mb-6 text-3xl font-bold text-leaf">Your Products</h2>
+        <h2 className="mb-6 text-3xl font-bold text-leaf">অর্ডার করুন</h2>
         {offer ? (
-          <CheckoutForm alignCenter products={[{ product: offer, quantity: 1 }]} />
+          <CheckoutForm
+            alignCenter
+            catalog={products}
+            products={[{ product: offer, quantity: 1 }]}
+          />
         ) : (
-          <p>অফার পণ্য পাওয়া যায়নি।</p>
+          <p>অফার পণ্য পাওয়া যায়নি। হোম পেজ থেকে পণ্য বেছে নিন।</p>
         )}
       </section>
     </div>

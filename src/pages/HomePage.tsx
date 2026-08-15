@@ -28,8 +28,8 @@ export function HomePage() {
         </Link>
       </section>
 
-      <section id="products" className="mx-auto max-w-6xl px-4 py-6 lg:py-10">
-        <div className="grid grid-cols-2 items-stretch gap-3 sm:gap-5 lg:grid-cols-3 lg:gap-6">
+      <section id="products" className="mx-auto max-w-6xl px-3 py-4 lg:px-4 lg:py-8">
+        <div className="grid grid-cols-2 items-stretch gap-2.5 sm:gap-4 lg:grid-cols-3 lg:gap-5">
           {products.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}

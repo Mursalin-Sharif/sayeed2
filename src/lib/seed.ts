@@ -346,7 +346,46 @@ export const seedLanding: LandingContent = {
   paymentTitle: 'WhatsApp / Imo',
   paymentNumber: '01813-514791 · 01725-250188',
   paymentNote: 'অর্ডার কনফার্ম করতে WhatsApp বা Imo-তে মেসেজ দিন। সারা দেশে কুরিয়ার/বাস ডেলিভারি।',
-  offerProductId: 'prod_papaya',
+  offerProductId: 'prod_offer_pack',
+}
+
+function asLines(value: unknown, fallback: string[]): string[] {
+  if (Array.isArray(value)) {
+    const lines = value.map((item) => String(item).trim()).filter(Boolean)
+    return lines.length ? lines : fallback
+  }
+  if (typeof value === 'string' && value.trim()) {
+    try {
+      const parsed = JSON.parse(value) as unknown
+      if (Array.isArray(parsed)) return asLines(parsed, fallback)
+    } catch {
+      const lines = value.split('\n').map((item) => item.trim()).filter(Boolean)
+      if (lines.length) return lines
+    }
+  }
+  return fallback
+}
+
+export function normalizeLanding(raw?: Partial<LandingContent> | null): LandingContent {
+  const base = seedLanding
+  const src = raw ?? {}
+  return {
+    heroTitle: src.heroTitle?.trim() || base.heroTitle,
+    heroSubtitle: src.heroSubtitle?.trim() || base.heroSubtitle,
+    packageTitle: src.packageTitle?.trim() || base.packageTitle,
+    packageItems: asLines(src.packageItems, base.packageItems),
+    storyTitle: src.storyTitle?.trim() || base.storyTitle,
+    storyBody: src.storyBody?.trim() || base.storyBody,
+    whyTitle: src.whyTitle?.trim() || base.whyTitle,
+    whyItems: asLines(src.whyItems, base.whyItems),
+    paymentTitle: src.paymentTitle?.trim() || base.paymentTitle,
+    paymentNumber: src.paymentNumber?.trim() || base.paymentNumber,
+    paymentNote: src.paymentNote?.trim() || base.paymentNote,
+    offerProductId:
+      !src.offerProductId?.trim() || src.offerProductId === 'prod_papaya'
+        ? 'prod_offer_pack'
+        : src.offerProductId.trim(),
+  }
 }
 
 const offer = seedProducts[0]

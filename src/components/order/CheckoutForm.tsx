@@ -7,14 +7,17 @@ import { useStore } from '@/context/StoreContext'
 
 type Props = {
   products: { product: Product; quantity: number }[]
+  catalog?: Product[]
   lockItems?: boolean
   onOrdered?: () => void
   alignCenter?: boolean
 }
 
-export function CheckoutForm({ products, lockItems, onOrdered, alignCenter }: Props) {
+export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCenter }: Props) {
   const { placeOrder } = useStore()
   const navigate = useNavigate()
+  const selectable = catalog?.length ? catalog : []
+  const [selectedId, setSelectedId] = useState(products[0]?.product.id ?? selectable[0]?.id ?? '')
   const [qty, setQty] = useState(products[0]?.quantity ?? 1)
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -27,15 +30,21 @@ export function CheckoutForm({ products, lockItems, onOrdered, alignCenter }: Pr
   useEffect(() => {
     if (products.length === 1 && !lockItems) {
       setQty(products[0]?.quantity ?? 1)
+      if (!selectable.length) setSelectedId(products[0]?.product.id ?? '')
     }
-  }, [lockItems, products])
+  }, [lockItems, products, selectable.length])
+
+  const selectedProduct =
+    selectable.find((item) => item.id === selectedId) ??
+    products.find((line) => line.product.id === selectedId)?.product ??
+    products[0]?.product
 
   const lines = useMemo(() => {
-    if (products.length === 1 && !lockItems) {
-      return [{ ...products[0], quantity: qty }]
+    if (selectedProduct && (selectable.length || (products.length === 1 && !lockItems))) {
+      return [{ product: selectedProduct, quantity: qty }]
     }
     return products
-  }, [lockItems, products, qty])
+  }, [lockItems, products, qty, selectable.length, selectedProduct])
 
   const subtotal = lines.reduce((sum, line) => sum + line.product.price * line.quantity, 0)
   const shippingFee = SHIPPING[shipping].fee
@@ -83,7 +92,24 @@ export function CheckoutForm({ products, lockItems, onOrdered, alignCenter }: Pr
     >
       <section className={`rounded-3xl bg-white p-6 shadow-sm ${alignCenter ? 'text-center' : ''}`}>
         <h3 className="mb-5 text-2xl font-bold text-leaf">Billing details</h3>
-        {products.length === 1 && !lockItems && (
+        {selectable.length > 0 && (
+          <label className="mb-4 block">
+            <span className="mb-1 block text-sm font-semibold">পণ্য নির্বাচন করুন *</span>
+            <select
+              value={selectedProduct?.id ?? ''}
+              onChange={(e) => setSelectedId(e.target.value)}
+              className="w-full rounded-xl border border-leaf/20 bg-white px-4 py-3 text-ink"
+              required
+            >
+              {selectable.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} — {formatTaka(item.price)}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+        {((products.length === 1 && !lockItems) || selectable.length > 0) ? (
           <label className="mb-4 block">
             <span className="mb-1 block text-sm font-semibold">পরিমাণ</span>
             <input
@@ -94,7 +120,7 @@ export function CheckoutForm({ products, lockItems, onOrdered, alignCenter }: Pr
               className={`w-28 rounded-xl border border-leaf/20 px-3 py-2 ${alignCenter ? 'mx-auto block text-center' : ''}`}
             />
           </label>
-        )}
+        ) : null}
         <label className="mb-4 block">
           <span className="mb-1 block text-sm font-semibold">পুরো নাম *</span>
           <input

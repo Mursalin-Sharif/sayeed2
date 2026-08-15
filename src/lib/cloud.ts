@@ -8,6 +8,7 @@ import type {
 } from './types'
 import { isSupabaseEnabled, supabase } from './supabase'
 import { customersFromOrders } from './localStore'
+import { normalizeLanding, seedLanding } from './seed'
 
 function fail(error: { message: string } | null) {
   if (error) throw new Error(error.message)
@@ -74,20 +75,28 @@ function asMedia(row: Record<string, unknown>): LandingMedia {
 }
 
 function asLanding(row: Record<string, unknown>): LandingContent {
-  return {
+  return normalizeLanding({
     heroTitle: String(row.hero_title ?? ''),
     heroSubtitle: String(row.hero_subtitle ?? ''),
     packageTitle: String(row.package_title ?? ''),
-    packageItems: Array.isArray(row.package_items) ? (row.package_items as string[]) : [],
+    packageItems: Array.isArray(row.package_items)
+      ? (row.package_items as string[])
+      : typeof row.package_items === 'string'
+        ? [row.package_items]
+        : [],
     storyTitle: String(row.story_title ?? ''),
     storyBody: String(row.story_body ?? ''),
     whyTitle: String(row.why_title ?? ''),
-    whyItems: Array.isArray(row.why_items) ? (row.why_items as string[]) : [],
+    whyItems: Array.isArray(row.why_items)
+      ? (row.why_items as string[])
+      : typeof row.why_items === 'string'
+        ? [row.why_items]
+        : [],
     paymentTitle: String(row.payment_title ?? ''),
     paymentNumber: String(row.payment_number ?? ''),
     paymentNote: String(row.payment_note ?? ''),
     offerProductId: String(row.offer_product_id ?? 'prod_offer_pack'),
-  }
+  })
 }
 
 export async function fetchCloudSnapshot(): Promise<StoreSnapshot | null> {
@@ -106,22 +115,7 @@ export async function fetchCloudSnapshot(): Promise<StoreSnapshot | null> {
     orders: orderList,
     slides: (slides.data ?? []).map((row) => asSlide(row as Record<string, unknown>)),
     media: (media.data ?? []).map((row) => asMedia(row as Record<string, unknown>)),
-    landing: landing.data
-      ? asLanding(landing.data as Record<string, unknown>)
-      : {
-          heroTitle: '',
-          heroSubtitle: '',
-          packageTitle: '',
-          packageItems: [],
-          storyTitle: '',
-          storyBody: '',
-          whyTitle: '',
-          whyItems: [],
-          paymentTitle: '',
-          paymentNumber: '',
-          paymentNote: '',
-          offerProductId: 'prod_offer_pack',
-        },
+    landing: landing.data ? asLanding(landing.data as Record<string, unknown>) : seedLanding,
     customers: customersFromOrders(orderList),
     messages: [],
   }

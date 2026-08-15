@@ -74,6 +74,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setSnapshot((prev) =>
           persist({
             ...cloud,
+            landing: cloud.landing.heroTitle ? cloud.landing : prev.landing,
+            media: cloud.media.length ? cloud.media : prev.media,
+            slides: cloud.slides.length ? cloud.slides : prev.slides,
             messages: cloud.messages.length ? cloud.messages : prev.messages ?? [],
           }),
         )
