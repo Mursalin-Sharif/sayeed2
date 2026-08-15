@@ -4,6 +4,7 @@ import { DISTRICTS, SHIPPING, type ShippingType } from '@/lib/districts'
 import type { OrderItem, Product } from '@/lib/types'
 import { formatTaka, isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
 import { useStore } from '@/context/StoreContext'
+import { DUPLICATE_PRODUCT_UNIT_MESSAGE } from '@/lib/mergeOrder'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackPurchase } from '@/lib/metaPixel'
 
 type Props = {
@@ -121,8 +122,12 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
       })
       onOrdered?.()
       navigate(`/order-success/${order.id}`, { state: { order } })
-    } catch {
-      setError('অর্ডার সম্পন্ন হয়নি, আবার চেষ্টা করুন')
+    } catch (error) {
+      setError(
+        error instanceof Error && error.message === DUPLICATE_PRODUCT_UNIT_MESSAGE
+          ? DUPLICATE_PRODUCT_UNIT_MESSAGE
+          : 'অর্ডার সম্পন্ন হয়নি, আবার চেষ্টা করুন',
+      )
     } finally {
       setSubmitting(false)
     }

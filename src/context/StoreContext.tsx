@@ -36,7 +36,7 @@ import {
   subscribeToOrders,
 } from '@/lib/cloud'
 import { isSupabaseEnabled } from '@/lib/supabase'
-import { applyIncomingOrder } from '@/lib/mergeOrder'
+import { applyIncomingOrder, DuplicateProductUnitError, hasSameProductUnitOrder } from '@/lib/mergeOrder'
 import { readAttribution } from '@/lib/metaPixel'
 
 type StoreContextValue = StoreSnapshot & {
@@ -199,15 +199,23 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     async (input: CheckoutInput) => {
       const attr = readAttribution()
       const remote = await fetchCloudOrders()
+      const payload = {
+        ...input,
+        source: input.source || attr.source,
+        campaign: input.campaign || attr.campaign,
+      }
       let outcome: ReturnType<typeof applyIncomingOrder> | null = null
+      let duplicate = false
       commit((prev) => {
-        outcome = applyIncomingOrder(remote ?? prev.orders, {
-          ...input,
-          source: input.source || attr.source,
-          campaign: input.campaign || attr.campaign,
-        })
+        const orders = remote ?? prev.orders
+        if (hasSameProductUnitOrder(orders, payload)) {
+          duplicate = true
+          return prev
+        }
+        outcome = applyIncomingOrder(orders, payload)
         return { ...prev, orders: outcome.orders }
       })
+      if (duplicate) throw new DuplicateProductUnitError()
       if (!outcome) throw new Error('Order failed')
       const result = outcome as ReturnType<typeof applyIncomingOrder>
       await sync(async () => {
