@@ -23,10 +23,6 @@ function sameBuyer(order: Order, name: string, phone: string, district: string) 
   )
 }
 
-function isSameProductOrder(order: Order, productId: string) {
-  return order.items.length > 0 && order.items.every((item) => item.productId === productId)
-}
-
 function addItems(existing: OrderItem[], incoming: OrderItem[]): OrderItem[] {
   const next = existing.map((item) => ({ ...item }))
   for (const item of incoming) {
@@ -46,16 +42,11 @@ function addItems(existing: OrderItem[], incoming: OrderItem[]): OrderItem[] {
   return next
 }
 
-function productKey(order: Order) {
-  return [...new Set(order.items.map((item) => item.productId))].sort().join(',')
-}
-
 export function pendingGroupKey(order: Order) {
   return [
     normText(order.customerName),
     normalizeBdPhone(order.phone),
     normText(order.district),
-    productKey(order),
   ].join('|')
 }
 
@@ -108,73 +99,48 @@ export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
   const phone = normalizeBdPhone(input.phone)
   const name = input.customerName.trim()
   const address = input.address.trim()
-  let next = [...orders]
-  const leftover: OrderItem[] = []
-  const mergeById = new Map<string, OrderItem[]>()
+  const target = orders.find(
+    (order) => isOpenOrder(order) && sameBuyer(order, name, phone, input.district),
+  )
 
-  for (const item of input.items) {
-    const target = next.find(
-      (order) =>
-        isOpenOrder(order) &&
-        sameBuyer(order, name, phone, input.district) &&
-        isSameProductOrder(order, item.productId),
-    )
-    if (target) {
-      const bucket = mergeById.get(target.id) ?? []
-      bucket.push(item)
-      mergeById.set(target.id, bucket)
-    } else {
-      leftover.push(item)
-    }
-  }
-
-  const updated: Order[] = []
-  for (const [id, items] of mergeById) {
-    next = next.map((order) => {
-      if (order.id !== id) return order
-      const mergedItems = addItems(order.items, items)
-      const totals = money(mergedItems, order.shippingFee)
-      const patched: Order = {
-        ...order,
-        items: mergedItems,
-        ...totals,
-      }
-      updated.push(patched)
-      return patched
-    })
-  }
-
-  if (leftover.length) {
-    const shippingFee = SHIPPING[input.shippingType].fee
-    const totals = money(leftover, shippingFee)
-    const created: Order = {
-      id: uid('ord'),
-      items: leftover,
-      customerName: name,
-      phone,
-      address,
-      district: input.district,
-      shippingType: input.shippingType,
-      shippingFee,
+  if (target) {
+    const mergedItems = addItems(target.items, input.items)
+    const totals = money(mergedItems, target.shippingFee)
+    const patched: Order = {
+      ...target,
+      items: mergedItems,
       ...totals,
-      status: 'pending',
-      notes: input.notes?.trim() ?? '',
-      createdAt: new Date().toISOString(),
     }
     return {
-      orders: [created, ...next],
-      saved: created,
-      inserted: created,
-      updated,
-      merged: false,
+      orders: orders.map((order) => (order.id === target.id ? patched : order)),
+      saved: patched,
+      inserted: null as Order | null,
+      updated: [patched],
+      merged: true,
     }
   }
 
+  const shippingFee = SHIPPING[input.shippingType].fee
+  const totals = money(input.items, shippingFee)
+  const created: Order = {
+    id: uid('ord'),
+    items: input.items,
+    customerName: name,
+    phone,
+    address,
+    district: input.district,
+    shippingType: input.shippingType,
+    shippingFee,
+    ...totals,
+    status: 'pending',
+    notes: input.notes?.trim() ?? '',
+    createdAt: new Date().toISOString(),
+  }
   return {
-    orders: next,
-    saved: updated[0],
-    inserted: null as Order | null,
-    updated,
-    merged: true,
+    orders: [created, ...orders],
+    saved: created,
+    inserted: created,
+    updated: [] as Order[],
+    merged: false,
   }
 }

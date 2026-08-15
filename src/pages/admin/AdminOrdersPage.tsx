@@ -47,7 +47,7 @@ export function AdminOrdersPage() {
   return (
     <div>
       <h1 className="font-display text-3xl text-gold">Orders</h1>
-      <p className="mt-1 text-zinc-400">{list.length} shown · same name, number, district and product stay together until confirm/cancel</p>
+      <p className="mt-1 text-zinc-400">{list.length} shown · same name, number and district stay together until confirm/cancel</p>
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
