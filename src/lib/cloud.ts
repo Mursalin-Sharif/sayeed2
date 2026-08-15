@@ -45,6 +45,8 @@ export function asOrder(row: Record<string, unknown>): Order {
     total: Number(row.total),
     status: (row.status as Order['status']) ?? 'pending',
     notes: String(row.notes ?? ''),
+    source: String(row.source ?? ''),
+    campaign: String(row.campaign ?? ''),
     createdAt: String(row.created_at ?? new Date().toISOString()),
   }
 }
@@ -96,6 +98,7 @@ function asLanding(row: Record<string, unknown>): LandingContent {
     paymentNumber: String(row.payment_number ?? ''),
     paymentNote: String(row.payment_note ?? ''),
     offerProductId: String(row.offer_product_id ?? 'prod_offer_pack'),
+    metaPixelId: String(row.meta_pixel_id ?? ''),
   })
 }
 
@@ -205,8 +208,29 @@ export async function cloudInsertOrder(order: Order) {
     total: order.total,
     status: order.status,
     notes: order.notes,
+    source: order.source ?? '',
+    campaign: order.campaign ?? '',
     created_at: order.createdAt,
   })
+  if (error && /source|campaign|column/i.test(error.message)) {
+    const retry = await supabase.from('orders').insert({
+      id: order.id,
+      items: order.items,
+      customer_name: order.customerName,
+      phone: order.phone,
+      address: order.address,
+      district: order.district,
+      shipping_type: order.shippingType,
+      shipping_fee: order.shippingFee,
+      subtotal: order.subtotal,
+      total: order.total,
+      status: order.status,
+      notes: order.notes,
+      created_at: order.createdAt,
+    })
+    fail(retry.error)
+    return
+  }
   fail(error)
 }
 
@@ -226,8 +250,30 @@ export async function cloudUpdateOrder(order: Order) {
       total: order.total,
       status: order.status,
       notes: order.notes,
+      source: order.source ?? '',
+      campaign: order.campaign ?? '',
     })
     .eq('id', order.id)
+  if (error && /source|campaign|column/i.test(error.message)) {
+    const retry = await supabase
+      .from('orders')
+      .update({
+        items: order.items,
+        customer_name: order.customerName,
+        phone: order.phone,
+        address: order.address,
+        district: order.district,
+        shipping_type: order.shippingType,
+        shipping_fee: order.shippingFee,
+        subtotal: order.subtotal,
+        total: order.total,
+        status: order.status,
+        notes: order.notes,
+      })
+      .eq('id', order.id)
+    fail(retry.error)
+    return
+  }
   fail(error)
 }
 
@@ -286,7 +332,7 @@ export async function cloudDeleteMedia(id: string) {
 
 export async function cloudSaveLanding(landing: LandingContent) {
   if (!supabase) return
-  const { error } = await supabase.from('landing_content').upsert({
+  const payload = {
     id: 1,
     hero_title: landing.heroTitle,
     hero_subtitle: landing.heroSubtitle,
@@ -300,7 +346,16 @@ export async function cloudSaveLanding(landing: LandingContent) {
     payment_number: landing.paymentNumber,
     payment_note: landing.paymentNote,
     offer_product_id: landing.offerProductId,
-  })
+    meta_pixel_id: landing.metaPixelId ?? '',
+  }
+  const { error } = await supabase.from('landing_content').upsert(payload)
+  if (error && /meta_pixel_id|column/i.test(error.message)) {
+    const rest = { ...payload }
+    delete (rest as { meta_pixel_id?: string }).meta_pixel_id
+    const retry = await supabase.from('landing_content').upsert(rest)
+    fail(retry.error)
+    return
+  }
   fail(error)
 }
 

@@ -1,12 +1,20 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { Copy, Check } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import { normalizeLanding } from '@/lib/seed'
+
+function adsLandingUrl() {
+  if (typeof window === 'undefined') return 'https://sayeed2.vercel.app/landing'
+  return `${window.location.origin}/landing`
+}
 
 export function AdminLandingPage() {
   const { landing, saveLanding, products } = useStore()
   const [form, setForm] = useState(() => normalizeLanding(landing))
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
+  const [copied, setCopied] = useState(false)
+  const landingUrl = useMemo(() => adsLandingUrl(), [])
 
   useEffect(() => {
     setForm(normalizeLanding(landing))
@@ -32,6 +40,16 @@ export function AdminLandingPage() {
     }
   }
 
+  async function copyLandingUrl() {
+    try {
+      await navigator.clipboard.writeText(`${landingUrl}?utm_source=facebook&utm_medium=cpc&utm_campaign=offer`)
+      setCopied(true)
+      window.setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setNotice('Copy failed — select the URL and copy it yourself.')
+    }
+  }
+
   return (
     <form onSubmit={onSubmit} className="max-w-3xl space-y-4">
       <h1 className="font-display text-3xl text-gold">Landing page content</h1>
@@ -40,6 +58,43 @@ export function AdminLandingPage() {
           {notice}
         </p>
       ) : null}
+
+      <section className="rounded-2xl border border-gold/30 bg-gold/10 p-4 space-y-3">
+        <p className="text-xs font-semibold tracking-[0.18em] text-gold uppercase">Facebook ads</p>
+        <p className="text-sm text-zinc-200">
+          Use this URL in Meta Ads. Shop design stays the same. Orders from this page show as Facebook in Admin → Orders.
+        </p>
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <input
+            readOnly
+            value={`${landingUrl}?utm_source=facebook&utm_medium=cpc&utm_campaign=offer`}
+            className="w-full rounded-xl bg-black/30 px-3 py-3 text-sm text-zinc-100"
+          />
+          <button
+            type="button"
+            onClick={() => void copyLandingUrl()}
+            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-gold px-4 py-3 text-sm font-bold text-leaf-deep"
+          >
+            {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+            {copied ? 'Copied' : 'Copy URL'}
+          </button>
+        </div>
+        <label className="block text-sm text-zinc-300">
+          Meta Pixel ID
+          <input
+            value={form.metaPixelId}
+            onChange={(e) => setForm({ ...form, metaPixelId: e.target.value.replace(/\s/g, '') })}
+            placeholder="Paste from Meta Events Manager"
+            className="mt-1 w-full rounded-xl bg-black/30 px-3 py-3 text-zinc-100"
+          />
+        </label>
+        <p className="text-xs text-zinc-400">
+          {form.metaPixelId
+            ? 'Pixel is on. Save, then PageView, ViewContent, AddToCart, InitiateCheckout and Purchase will fire.'
+            : 'Paste the Pixel ID here and click Save. Until then Facebook cannot track.'}
+        </p>
+      </section>
+
       <label className="block text-sm text-zinc-400">
         Hero title
         <input

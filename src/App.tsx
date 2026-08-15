@@ -20,6 +20,7 @@ import { AdminLandingPage } from '@/pages/admin/AdminLandingPage'
 import { AdminCarouselPage } from '@/pages/admin/AdminCarouselPage'
 
 import { OrderAlertHost } from '@/components/admin/OrderAlertHost'
+import { MetaPixel } from '@/components/analytics/MetaPixel'
 import { useAuth } from '@/context/AuthContext'
 
 function Storefront({ children }: { children: ReactNode }) {
@@ -50,6 +51,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <ScrollManager />
+      <MetaPixel />
       <AdminAlerts />
       <Routes>
         <Route path="/" element={<Storefront><HomePage /></Storefront>} />
@@ -57,6 +59,7 @@ export default function App() {
         <Route path="/cart" element={<Storefront><CartPage /></Storefront>} />
         <Route path="/contact" element={<Storefront><ContactPage /></Storefront>} />
         <Route path="/offer" element={<Storefront><LandingPage /></Storefront>} />
+        <Route path="/landing" element={<Storefront><LandingPage /></Storefront>} />
         <Route path="/order-success/:id" element={<Storefront><OrderSuccessPage /></Storefront>} />
         <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin" element={<AdminLayout />}>

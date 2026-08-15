@@ -30,8 +30,13 @@ create table if not exists orders (
   total numeric not null,
   status text not null default 'pending',
   notes text not null default '',
+  source text not null default '',
+  campaign text not null default '',
   created_at timestamptz not null default now()
 );
+
+alter table orders add column if not exists source text not null default '';
+alter table orders add column if not exists campaign text not null default '';
 
 create table if not exists carousel_slides (
   id text primary key,
@@ -69,6 +74,8 @@ create table if not exists landing_content (
   payment_note text not null default '',
   offer_product_id text not null default 'prod_papaya'
 );
+
+alter table landing_content add column if not exists meta_pixel_id text not null default '';
 
 alter table products enable row level security;
 alter table orders enable row level security;

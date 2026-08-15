@@ -83,6 +83,7 @@ export function AdminOrdersPage() {
                   <p className="text-sm text-zinc-400">
                     {order.phone} · {order.district}
                   </p>
+                  <p className="text-xs text-zinc-500">Source: {order.source || 'Direct'}{order.campaign ? ` · ${order.campaign}` : ''}</p>
                   <p className="text-xs text-zinc-500">{formatDate(order.createdAt)}</p>
                 </div>
                 <div className="text-right">
@@ -120,6 +121,7 @@ export function AdminOrdersPage() {
                     {order.address}, {order.district}
                   </p>
                   <p>Shipping: {SHIPPING[order.shippingType]?.label ?? order.shippingType} ({formatTaka(order.shippingFee)})</p>
+                  <p>Source: {order.source || 'Direct'}{order.campaign ? ` · ${order.campaign}` : ''}</p>
                   {order.items.map((item) => (
                     <div key={item.productId} className="flex items-center gap-3">
                       <img src={item.image} alt="" className="size-10 rounded object-cover" />

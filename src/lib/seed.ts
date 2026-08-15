@@ -347,6 +347,7 @@ export const seedLanding: LandingContent = {
   paymentNumber: '01813-514791 · 01725-250188',
   paymentNote: 'অর্ডার কনফার্ম করতে WhatsApp বা Imo-তে মেসেজ দিন। সারা দেশে কুরিয়ার/বাস ডেলিভারি।',
   offerProductId: 'prod_offer_pack',
+  metaPixelId: '',
 }
 
 function asLines(value: unknown, fallback: string[]): string[] {
@@ -385,6 +386,7 @@ export function normalizeLanding(raw?: Partial<LandingContent> | null): LandingC
       !src.offerProductId?.trim() || src.offerProductId === 'prod_papaya'
         ? 'prod_offer_pack'
         : src.offerProductId.trim(),
+    metaPixelId: src.metaPixelId?.trim() || '',
   }
 }
 
@@ -404,6 +406,8 @@ export const seedOrders: Order[] = [
     total: 1950,
     status: 'pending',
     notes: '',
+    source: '',
+    campaign: '',
     createdAt: '2026-08-13T09:20:00.000Z',
   },
   {
@@ -419,6 +423,8 @@ export const seedOrders: Order[] = [
     total: 1400,
     status: 'confirmed',
     notes: '',
+    source: '',
+    campaign: '',
     createdAt: '2026-08-12T14:10:00.000Z',
   },
   {
@@ -434,6 +440,8 @@ export const seedOrders: Order[] = [
     total: 1100,
     status: 'shipped',
     notes: '',
+    source: '',
+    campaign: '',
     createdAt: '2026-08-11T11:00:00.000Z',
   },
   {
@@ -449,6 +457,8 @@ export const seedOrders: Order[] = [
     total: 700,
     status: 'delivered',
     notes: '',
+    source: '',
+    campaign: '',
     createdAt: '2026-08-10T08:45:00.000Z',
   },
 ]

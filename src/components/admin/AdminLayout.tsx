@@ -27,7 +27,7 @@ const links = [
   { to: '/admin/customers', label: 'Customers', icon: Users },
   { to: '/admin/messages', label: 'Messages', icon: Mail },
   { to: '/admin/media', label: 'Media', icon: Images },
-  { to: '/admin/landing', label: 'Landing', icon: Megaphone },
+  { to: '/admin/landing', label: 'Landing / Pixel', icon: Megaphone },
   { to: '/admin/carousel', label: 'Carousel', icon: PanelsTopLeft },
 ]
 

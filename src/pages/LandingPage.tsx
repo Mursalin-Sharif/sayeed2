@@ -1,7 +1,8 @@
 import { CheckoutForm } from '@/components/order/CheckoutForm'
 import { useStore } from '@/context/StoreContext'
+import { trackViewContent } from '@/lib/metaPixel'
 import { SITE, normalizeLanding } from '@/lib/seed'
-import type { MouseEvent } from 'react'
+import { useEffect, type MouseEvent } from 'react'
 
 function youtubeId(url: string) {
   const embed = url.match(/embed\/([a-zA-Z0-9_-]+)/)
@@ -27,6 +28,16 @@ export function LandingPage() {
     products.find((item) => item.id === 'prod_offer_pack') ??
     products[0]
   const gallery = (media ?? []).filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
+
+  useEffect(() => {
+    if (!offer) return
+    trackViewContent({
+      id: offer.id,
+      name: offer.name,
+      value: offer.price,
+      category: offer.category,
+    })
+  }, [offer])
 
   return (
     <div className="bg-white text-center">

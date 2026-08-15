@@ -4,6 +4,7 @@ import { DISTRICTS, SHIPPING, type ShippingType } from '@/lib/districts'
 import type { OrderItem, Product } from '@/lib/types'
 import { formatTaka, isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
 import { useStore } from '@/context/StoreContext'
+import { trackInitiateCheckout, trackPurchase } from '@/lib/metaPixel'
 
 type Props = {
   products: { product: Product; quantity: number }[]
@@ -50,6 +51,18 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
   const shippingFee = SHIPPING[shipping].fee
   const total = subtotal + shippingFee
 
+  useEffect(() => {
+    trackInitiateCheckout({
+      value: total,
+      items: lines.map((line) => ({
+        id: line.product.id,
+        name: line.product.name,
+        price: line.product.price,
+        quantity: line.quantity,
+      })),
+    })
+  }, [])
+
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
     setError('')
@@ -74,6 +87,16 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
         address,
         district,
         shippingType: shipping,
+      })
+      trackPurchase({
+        id: order.id,
+        value: order.total,
+        items: order.items.map((item) => ({
+          id: item.productId,
+          name: item.name,
+          price: item.price,
+          quantity: item.quantity,
+        })),
       })
       onOrdered?.()
       navigate(`/order-success/${order.id}`, { state: { order } })

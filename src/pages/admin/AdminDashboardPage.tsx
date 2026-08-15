@@ -111,6 +111,31 @@ export function AdminDashboardPage() {
         ))}
       </div>
 
+      <section className="rounded-2xl border border-gold/25 bg-gold/10 p-5">
+        <p className="text-xs font-semibold tracking-[0.18em] text-gold uppercase">Facebook ads</p>
+        <p className="mt-2 text-sm text-zinc-200">
+          Ads landing URL and Meta Pixel ID are in Landing — not on the shop homepage.
+        </p>
+        <div className="mt-3 flex flex-wrap gap-2">
+          <Link
+            to="/admin/landing"
+            className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-sm font-bold text-leaf-deep"
+          >
+            Open Pixel settings
+            <ArrowUpRight className="size-4" />
+          </Link>
+          <a
+            href="/landing"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-cream hover:bg-white/5"
+          >
+            Preview /landing
+            <ArrowUpRight className="size-4" />
+          </a>
+        </div>
+      </section>
+
       <div className="flex flex-wrap gap-2">
         {actions.map((action) => (
           <Link

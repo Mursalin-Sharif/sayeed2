@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { CheckoutForm } from '@/components/order/CheckoutForm'
 import { SafeImage } from '@/components/ui/SafeImage'
 import { useCart } from '@/context/CartContext'
 import { useStore } from '@/context/StoreContext'
+import { trackAddToCart, trackViewContent } from '@/lib/metaPixel'
 import { formatTaka } from '@/lib/utils'
 
 export function ProductPage() {
@@ -14,6 +15,16 @@ export function ProductPage() {
   const [active, setActive] = useState(0)
   const [qty, setQty] = useState(1)
   const [added, setAdded] = useState(false)
+
+  useEffect(() => {
+    if (!product) return
+    trackViewContent({
+      id: product.id,
+      name: product.name,
+      value: product.price,
+      category: product.category,
+    })
+  }, [product])
 
   if (!product) {
     return (
@@ -80,6 +91,12 @@ export function ProductPage() {
               type="button"
               onClick={() => {
                 add(product.id, qty)
+                trackAddToCart({
+                  id: product.id,
+                  name: product.name,
+                  value: product.price,
+                  quantity: qty,
+                })
                 setAdded(true)
               }}
               className="rounded-full border-2 border-leaf px-6 py-3 font-bold text-leaf"

@@ -47,6 +47,8 @@ export type Order = {
   total: number
   status: OrderStatus
   notes: string
+  source: string
+  campaign: string
   createdAt: string
 }
 
@@ -95,6 +97,7 @@ export type LandingContent = {
   paymentNumber: string
   paymentNote: string
   offerProductId: string
+  metaPixelId: string
 }
 
 export type ContactMessage = {
@@ -115,6 +118,8 @@ export type CheckoutInput = {
   district: string
   shippingType: 'district' | 'upazila' | 'home'
   notes?: string
+  source?: string
+  campaign?: string
 }
 
 export type StoreSnapshot = {

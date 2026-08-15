@@ -37,6 +37,7 @@ import {
 } from '@/lib/cloud'
 import { isSupabaseEnabled } from '@/lib/supabase'
 import { applyIncomingOrder } from '@/lib/mergeOrder'
+import { readAttribution } from '@/lib/metaPixel'
 
 type StoreContextValue = StoreSnapshot & {
   loading: boolean
@@ -91,15 +92,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     fetchCloudSnapshot()
       .then((cloud) => {
         if (cancelled || !cloud?.products.length) return
-        setSnapshot((prev) =>
-          persist({
+        setSnapshot((prev) => {
+          const landing = cloud.landing.heroTitle ? cloud.landing : prev.landing
+          return persist({
             ...cloud,
-            landing: cloud.landing.heroTitle ? cloud.landing : prev.landing,
+            landing: {
+              ...landing,
+              metaPixelId: landing.metaPixelId?.trim() || prev.landing.metaPixelId,
+            },
             media: cloud.media.length ? cloud.media : prev.media,
             slides: cloud.slides.length ? cloud.slides : prev.slides,
             messages: cloud.messages.length ? cloud.messages : prev.messages ?? [],
-          }),
-        )
+          })
+        })
       })
       .catch((error: unknown) => {
         if (!cancelled) setSyncError(error instanceof Error ? error.message : 'Cloud load failed')
@@ -192,10 +197,15 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const placeOrder = useCallback(
     async (input: CheckoutInput) => {
+      const attr = readAttribution()
       const remote = await fetchCloudOrders()
       let outcome: ReturnType<typeof applyIncomingOrder> | null = null
       commit((prev) => {
-        outcome = applyIncomingOrder(remote ?? prev.orders, input)
+        outcome = applyIncomingOrder(remote ?? prev.orders, {
+          ...input,
+          source: input.source || attr.source,
+          campaign: input.campaign || attr.campaign,
+        })
         return { ...prev, orders: outcome.orders }
       })
       if (!outcome) throw new Error('Order failed')

@@ -109,6 +109,8 @@ export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
     const patched: Order = {
       ...target,
       items: mergedItems,
+      source: target.source || input.source || '',
+      campaign: target.campaign || input.campaign || '',
       ...totals,
     }
     return {
@@ -134,6 +136,8 @@ export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
     ...totals,
     status: 'pending',
     notes: input.notes?.trim() ?? '',
+    source: input.source?.trim() ?? '',
+    campaign: input.campaign?.trim() ?? '',
     createdAt: new Date().toISOString(),
   }
   return {
