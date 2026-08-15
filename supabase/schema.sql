@@ -113,3 +113,12 @@ drop policy if exists "auth update media" on storage.objects;
 create policy "public read media bucket" on storage.objects for select using (bucket_id = 'media');
 create policy "auth upload media" on storage.objects for insert with check (bucket_id = 'media' and auth.role() = 'authenticated');
 create policy "auth update media" on storage.objects for update using (bucket_id = 'media' and auth.role() = 'authenticated');
+
+-- Live admin order alerts (safe to re-run)
+alter table orders replica identity full;
+do $$
+begin
+  alter publication supabase_realtime add table orders;
+exception
+  when duplicate_object then null;
+end $$;

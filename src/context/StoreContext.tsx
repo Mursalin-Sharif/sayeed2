@@ -19,7 +19,7 @@ import type {
 } from '@/lib/types'
 import { SHIPPING } from '@/lib/districts'
 import { uid } from '@/lib/utils'
-import { customersFromOrders, loadSnapshot, saveSnapshot } from '@/lib/localStore'
+import { customersFromOrders, loadSnapshot, onLocalSnapshotChange, saveSnapshot } from '@/lib/localStore'
 import {
   cloudDeleteMedia,
   cloudDeleteOrder,
@@ -31,7 +31,9 @@ import {
   cloudUpsertMedia,
   cloudUpsertProduct,
   cloudUpsertSlide,
+  fetchCloudOrders,
   fetchCloudSnapshot,
+  subscribeToOrders,
 } from '@/lib/cloud'
 import { isSupabaseEnabled } from '@/lib/supabase'
 
@@ -58,6 +60,21 @@ const StoreContext = createContext<StoreContextValue | null>(null)
 
 function persist(next: StoreSnapshot) {
   return saveSnapshot({ ...next, messages: next.messages ?? [], customers: customersFromOrders(next.orders) })
+}
+
+function ordersKey(orders: Order[]) {
+  return orders.map((order) => `${order.id}:${order.status}`).join('|')
+}
+
+function mergeRemoteOrders(prev: StoreSnapshot, remote: Order[]): StoreSnapshot {
+  const remoteIds = new Set(remote.map((order) => order.id))
+  const cutoff = Date.now() - 90_000
+  const inFlight = prev.orders.filter(
+    (order) => !remoteIds.has(order.id) && new Date(order.createdAt).getTime() > cutoff,
+  )
+  const orders = [...inFlight, ...remote]
+  if (ordersKey(prev.orders) === ordersKey(orders)) return prev
+  return persist({ ...prev, orders })
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -89,6 +106,50 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       })
     return () => {
       cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    return onLocalSnapshotChange(() => {
+      setSnapshot(loadSnapshot())
+    })
+  }, [])
+
+  useEffect(() => {
+    if (!isSupabaseEnabled) return
+    const unsub = subscribeToOrders({
+      onInsert: (order) => {
+        setSnapshot((prev) => {
+          if (prev.orders.some((item) => item.id === order.id)) return prev
+          return persist({ ...prev, orders: [order, ...prev.orders] })
+        })
+      },
+      onUpdate: (order) => {
+        setSnapshot((prev) => {
+          if (!prev.orders.some((item) => item.id === order.id)) {
+            return persist({ ...prev, orders: [order, ...prev.orders] })
+          }
+          return persist({
+            ...prev,
+            orders: prev.orders.map((item) => (item.id === order.id ? { ...item, status: order.status } : item)),
+          })
+        })
+      },
+      onDelete: (id) => {
+        setSnapshot((prev) => persist({ ...prev, orders: prev.orders.filter((item) => item.id !== id) }))
+      },
+    })
+    const pull = () => {
+      void fetchCloudOrders().then((remote) => {
+        if (!remote) return
+        setSnapshot((prev) => mergeRemoteOrders(prev, remote))
+      })
+    }
+    pull()
+    const poll = window.setInterval(pull, 8000)
+    return () => {
+      unsub()
+      window.clearInterval(poll)
     }
   }, [])
 

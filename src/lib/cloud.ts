@@ -31,7 +31,7 @@ function asProduct(row: Record<string, unknown>): Product {
   }
 }
 
-function asOrder(row: Record<string, unknown>): Order {
+export function asOrder(row: Record<string, unknown>): Order {
   return {
     id: String(row.id),
     items: Array.isArray(row.items) ? (row.items as Order['items']) : [],
@@ -118,6 +118,50 @@ export async function fetchCloudSnapshot(): Promise<StoreSnapshot | null> {
     landing: landing.data ? asLanding(landing.data as Record<string, unknown>) : seedLanding,
     customers: customersFromOrders(orderList),
     messages: [],
+  }
+}
+
+export async function fetchCloudOrders(): Promise<Order[] | null> {
+  if (!isSupabaseEnabled || !supabase) return null
+  const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false })
+  if (error) return null
+  return (data ?? []).map((row) => asOrder(row as Record<string, unknown>))
+}
+
+export function subscribeToOrders(handlers: {
+  onInsert: (order: Order) => void
+  onUpdate?: (order: Order) => void
+  onDelete?: (id: string) => void
+}) {
+  if (!supabase) return () => {}
+  const client = supabase
+  const channel = client
+    .channel('admin-orders')
+    .on(
+      'postgres_changes',
+      { event: 'INSERT', schema: 'public', table: 'orders' },
+      (payload) => {
+        handlers.onInsert(asOrder(payload.new as Record<string, unknown>))
+      },
+    )
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'orders' },
+      (payload) => {
+        handlers.onUpdate?.(asOrder(payload.new as Record<string, unknown>))
+      },
+    )
+    .on(
+      'postgres_changes',
+      { event: 'DELETE', schema: 'public', table: 'orders' },
+      (payload) => {
+        const id = String((payload.old as { id?: string } | null)?.id ?? '')
+        if (id) handlers.onDelete?.(id)
+      },
+    )
+    .subscribe()
+  return () => {
+    void client.removeChannel(channel)
   }
 }
 

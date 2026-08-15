@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react'
 import { ConfirmProvider } from '@/components/admin/ConfirmDialog'
+import { OrderAlertHost } from '@/components/admin/OrderAlertHost'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { useAuth } from '@/context/AuthContext'
 import { useStore } from '@/context/StoreContext'
@@ -64,11 +65,12 @@ function AdminShell({
   open: boolean
   setOpen: (value: boolean | ((prev: boolean) => boolean)) => void
 }) {
-  const { syncError, messages } = useStore()
+  const { syncError, messages, orders } = useStore()
   const unread = (messages ?? []).filter((item) => !item.read).length
+  const pendingOrders = orders.filter((order) => order.status === 'pending').length
 
   return (
-    <div className="relative min-h-svh overflow-hidden bg-[#0b1310] text-zinc-100">
+    <div className="relative min-h-svh overflow-x-hidden bg-[#0b1310] text-zinc-100">
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,196,25,0.08),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(21,122,75,0.18),transparent_40%)]" />
       <div className="relative mx-auto flex max-w-7xl gap-0 md:gap-6">
         <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-r border-gold/10 bg-[#101a16]/80 p-5 backdrop-blur md:flex">
@@ -99,6 +101,11 @@ function AdminShell({
                 {link.to === '/admin/messages' && unread > 0 ? (
                   <span className="grid min-w-5 place-items-center rounded-full bg-leaf-deep px-1.5 text-[10px] font-bold text-gold">
                     {unread}
+                  </span>
+                ) : null}
+                {link.to === '/admin/orders' && pendingOrders > 0 ? (
+                  <span className="grid min-w-5 place-items-center rounded-full bg-amber-400 px-1.5 text-[10px] font-bold text-leaf-deep">
+                    {pendingOrders}
                   </span>
                 ) : null}
               </NavLink>
@@ -153,6 +160,7 @@ function AdminShell({
                     <link.icon className="size-4" />
                     {link.label}
                     {link.to === '/admin/messages' && unread > 0 ? ` (${unread})` : ''}
+                    {link.to === '/admin/orders' && pendingOrders > 0 ? ` (${pendingOrders})` : ''}
                   </NavLink>
                 ))}
                 <button
@@ -177,6 +185,7 @@ function AdminShell({
           <Outlet />
         </div>
       </div>
+      <OrderAlertHost />
     </div>
   )
 }

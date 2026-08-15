@@ -85,3 +85,11 @@ export function resetSnapshot() {
   localStorage.removeItem(KEY)
   return loadSnapshot()
 }
+
+export function onLocalSnapshotChange(callback: () => void) {
+  const handler = (event: StorageEvent) => {
+    if (event.key === KEY) callback()
+  }
+  window.addEventListener('storage', handler)
+  return () => window.removeEventListener('storage', handler)
+}
