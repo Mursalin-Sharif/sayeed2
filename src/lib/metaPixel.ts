@@ -50,7 +50,7 @@ export function captureAttribution(search: string, pathname: string) {
   const next: Attribution = {
     source: utmSource || (fbclid ? 'facebook' : isLanding && !prev.source ? 'facebook' : prev.source),
     medium: utmMedium || (fbclid ? 'paid' : prev.medium),
-    campaign: utmCampaign || (pathname === '/landing' && !prev.campaign ? 'landing' : prev.campaign),
+    campaign: utmCampaign || (isLanding && !prev.campaign ? 'landing' : prev.campaign),
     content: utmContent || prev.content,
     fbclid: fbclid || prev.fbclid,
     landing: isLanding ? pathname : prev.landing,
@@ -104,6 +104,14 @@ export function initMetaPixel(id = getMetaPixelId()) {
   if (initedId === id) return
   window.fbq('init', id)
   initedId = id
+}
+
+const onceKeys = new Set<string>()
+
+export function trackOnce(key: string, fire: () => void) {
+  if (onceKeys.has(key)) return
+  onceKeys.add(key)
+  fire()
 }
 
 export function trackPageView() {

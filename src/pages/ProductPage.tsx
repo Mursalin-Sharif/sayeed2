@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { CheckoutForm } from '@/components/order/CheckoutForm'
 import { SafeImage } from '@/components/ui/SafeImage'
 import { useCart } from '@/context/CartContext'
 import { useStore } from '@/context/StoreContext'
-import { trackAddToCart, trackViewContent } from '@/lib/metaPixel'
+import { trackAddToCart, trackInitiateCheckout, trackOnce, trackViewContent } from '@/lib/metaPixel'
 import { formatTaka } from '@/lib/utils'
 
 export function ProductPage() {
   const { id } = useParams()
+  const { pathname } = useLocation()
   const { products } = useStore()
   const { add } = useCart()
   const product = products.find((item) => item.id === id)
@@ -37,9 +38,24 @@ export function ProductPage() {
     )
   }
 
-  const gallery = product.gallery.length ? product.gallery : [product.image]
+  const item = product
+  const gallery = item.gallery.length ? item.gallery : [item.image]
 
   function goOrder() {
+    trackOnce(`atc:${pathname}:${item.id}`, () =>
+      trackAddToCart({
+        id: item.id,
+        name: item.name,
+        value: item.price,
+        quantity: qty,
+      }),
+    )
+    trackOnce(`ico:${pathname}`, () =>
+      trackInitiateCheckout({
+        value: item.price * qty,
+        items: [{ id: item.id, name: item.name, price: item.price, quantity: qty }],
+      }),
+    )
     document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 

@@ -1,8 +1,9 @@
 import { CheckoutForm } from '@/components/order/CheckoutForm'
 import { useStore } from '@/context/StoreContext'
-import { trackViewContent } from '@/lib/metaPixel'
+import { trackAddToCart, trackInitiateCheckout, trackOnce, trackViewContent } from '@/lib/metaPixel'
 import { SITE, normalizeLanding } from '@/lib/seed'
 import { useEffect, type MouseEvent } from 'react'
+import { useLocation } from 'react-router-dom'
 
 function youtubeId(url: string) {
   const embed = url.match(/embed\/([a-zA-Z0-9_-]+)/)
@@ -20,8 +21,25 @@ function scrollToOrder(event: MouseEvent<HTMLAnchorElement>) {
   document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
+function trackLandingCheckout(
+  pathname: string,
+  offer: { id: string; name: string; price: number } | undefined,
+) {
+  if (!offer) return
+  trackOnce(`atc:${pathname}:${offer.id}`, () =>
+    trackAddToCart({ id: offer.id, name: offer.name, value: offer.price, quantity: 1 }),
+  )
+  trackOnce(`ico:${pathname}`, () =>
+    trackInitiateCheckout({
+      value: offer.price,
+      items: [{ id: offer.id, name: offer.name, price: offer.price, quantity: 1 }],
+    }),
+  )
+}
+
 export function LandingPage() {
   const { landing, media, products } = useStore()
+  const { pathname } = useLocation()
   const content = normalizeLanding(landing)
   const offer =
     products.find((item) => item.id === content.offerProductId) ??
@@ -56,7 +74,10 @@ export function LandingPage() {
         </ol>
         <a
           href="#order-form"
-          onClick={scrollToOrder}
+          onClick={(event) => {
+            scrollToOrder(event)
+            trackLandingCheckout(pathname, offer)
+          }}
           className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
         >
           অর্ডার করুন

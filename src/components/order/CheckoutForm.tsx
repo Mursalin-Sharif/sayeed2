@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { DISTRICTS, SHIPPING, type ShippingType } from '@/lib/districts'
 import type { OrderItem, Product } from '@/lib/types'
 import { formatTaka, isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
 import { useStore } from '@/context/StoreContext'
-import { trackInitiateCheckout, trackPurchase } from '@/lib/metaPixel'
+import { trackAddToCart, trackInitiateCheckout, trackOnce, trackPurchase } from '@/lib/metaPixel'
 
 type Props = {
   products: { product: Product; quantity: number }[]
@@ -17,6 +17,7 @@ type Props = {
 export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCenter }: Props) {
   const { placeOrder } = useStore()
   const navigate = useNavigate()
+  const location = useLocation()
   const selectable = catalog?.length ? catalog : []
   const [selectedId, setSelectedId] = useState(products[0]?.product.id ?? selectable[0]?.id ?? '')
   const [qty, setQty] = useState(products[0]?.quantity ?? 1)
@@ -51,17 +52,36 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
   const shippingFee = SHIPPING[shipping].fee
   const total = subtotal + shippingFee
 
+  const checkoutItems = lines.map((line) => ({
+    id: line.product.id,
+    name: line.product.name,
+    price: line.product.price,
+    quantity: line.quantity,
+  }))
+
+  function markCheckoutStarted() {
+    if (!lines.length) return
+    if (!lockItems) {
+      const first = lines[0]
+      trackOnce(`atc:${location.pathname}:${first.product.id}`, () =>
+        trackAddToCart({
+          id: first.product.id,
+          name: first.product.name,
+          value: first.product.price,
+          quantity: first.quantity,
+        }),
+      )
+    }
+    trackOnce(`ico:${location.pathname}`, () =>
+      trackInitiateCheckout({ value: total, items: checkoutItems }),
+    )
+  }
+
   useEffect(() => {
-    trackInitiateCheckout({
-      value: total,
-      items: lines.map((line) => ({
-        id: line.product.id,
-        name: line.product.name,
-        price: line.product.price,
-        quantity: line.quantity,
-      })),
-    })
-  }, [])
+    if (lockItems && lines.length) markCheckoutStarted()
+    // Cart page is already checkout — fire once when the form mounts with items.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intent should not re-fire on qty/shipping edits
+  }, [lockItems])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -88,6 +108,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
         district,
         shippingType: shipping,
       })
+      markCheckoutStarted()
       trackPurchase({
         id: order.id,
         value: order.total,
@@ -110,6 +131,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
   return (
     <form
       onSubmit={onSubmit}
+      onFocusCapture={markCheckoutStarted}
       className={alignCenter ? 'mx-auto grid max-w-xl gap-8' : 'grid gap-8 lg:grid-cols-2'}
       id="order-form"
     >
