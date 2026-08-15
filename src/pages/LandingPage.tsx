@@ -52,25 +52,6 @@ export function LandingPage() {
         </a>
       </section>
 
-      <section className="relative overflow-hidden bg-[#e8f5ed] px-4 py-8 text-center">
-        <p className="mx-auto max-w-3xl text-lg font-extrabold leading-snug text-[#e44b1c] md:text-2xl">
-          ওয়েবসাইটে অর্ডার করতে সমস্যা হলে বা অর্ডার করতে না পারলে
-        </p>
-        <p className="mt-2 text-lg font-extrabold text-[#e44b1c] md:text-2xl">প্রয়োজনে কল করুন-</p>
-        <p className="mt-2 space-y-1 text-2xl font-extrabold text-[#e44b1c] md:text-3xl">
-          <a href={`tel:${SITE.phone2}`} className="block">
-            {SITE.phone2}
-          </a>
-          <a href={`tel:${SITE.phone}`} className="block">
-            {SITE.phone}
-          </a>
-        </p>
-        <span
-          aria-hidden
-          className="pointer-events-none absolute -right-8 top-1/2 h-28 w-28 -translate-y-1/2 rounded-full border-[14px] border-[#e44b1c] md:h-36 md:w-36"
-        />
-      </section>
-
       <section className="px-4 py-12">
         <h2 className="mx-auto mb-6 max-w-4xl rounded-xl bg-leaf py-3 text-xl font-bold text-gold md:text-2xl">
           {content.storyTitle}
@@ -126,12 +107,17 @@ export function LandingPage() {
       </section>
 
       <section className="bg-gold px-4 py-10">
-        <h2 className="text-2xl font-extrabold text-leaf-deep">
-          {content.paymentTitle} {content.paymentNumber}
-        </h2>
-        <p className="mx-auto mt-2 max-w-2xl font-semibold">{content.paymentNote}</p>
-        <p className="mt-1 text-sm">
-          হটলাইন: {SITE.phone2} · {SITE.phone}
+        <p className="mx-auto max-w-3xl text-lg font-extrabold leading-snug text-leaf-deep md:text-2xl">
+          ওয়েবসাইটে অর্ডার করতে সমস্যা হলে বা অর্ডার করতে না পারলে
+        </p>
+        <p className="mt-3 text-lg font-extrabold text-leaf-deep md:text-2xl">প্রয়োজনে কল করুন-</p>
+        <p className="mt-3 space-y-1 text-2xl font-extrabold text-leaf-deep md:text-3xl">
+          <a href={`tel:${SITE.phone2}`} className="block">
+            {SITE.phone2}
+          </a>
+          <a href={`tel:${SITE.phone}`} className="block">
+            {SITE.phone}
+          </a>
         </p>
       </section>
 
