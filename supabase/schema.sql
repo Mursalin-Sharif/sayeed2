@@ -80,6 +80,7 @@ drop policy if exists "public read products" on products;
 drop policy if exists "public read slides" on carousel_slides;
 drop policy if exists "public read media" on landing_media;
 drop policy if exists "public read landing" on landing_content;
+drop policy if exists "public read orders" on orders;
 drop policy if exists "public insert orders" on orders;
 drop policy if exists "public create orders" on orders;
 drop policy if exists "admin all products" on products;

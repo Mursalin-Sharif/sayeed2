@@ -14,8 +14,11 @@ import {
   X,
 } from 'lucide-react'
 import { ConfirmProvider } from '@/components/admin/ConfirmDialog'
+import { LogoMark } from '@/components/brand/LogoMark'
 import { useAuth } from '@/context/AuthContext'
 import { useStore } from '@/context/StoreContext'
+import { SITE } from '@/lib/seed'
+import { cn } from '@/lib/utils'
 
 const links = [
   { to: '/admin', label: 'Dashboard', icon: LayoutDashboard, end: true },
@@ -61,13 +64,21 @@ function AdminShell({
   open: boolean
   setOpen: (value: boolean | ((prev: boolean) => boolean)) => void
 }) {
-  const { syncError } = useStore()
+  const { syncError, messages } = useStore()
+  const unread = (messages ?? []).filter((item) => !item.read).length
 
   return (
-    <div className="min-h-svh bg-[#0f1714] text-zinc-100">
-      <div className="mx-auto flex max-w-7xl gap-0 md:gap-6">
-        <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col border-r border-white/10 p-4 md:flex">
-          <p className="mb-6 font-display text-2xl text-gold">Admin CMS</p>
+    <div className="relative min-h-svh overflow-hidden bg-[#0b1310] text-zinc-100">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(240,196,25,0.08),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(21,122,75,0.18),transparent_40%)]" />
+      <div className="relative mx-auto flex max-w-7xl gap-0 md:gap-6">
+        <aside className="sticky top-0 hidden h-svh w-64 shrink-0 flex-col border-r border-gold/10 bg-[#101a16]/80 p-5 backdrop-blur md:flex">
+          <div className="mb-8 flex items-center gap-3">
+            <LogoMark className="size-12" />
+            <div>
+              <p className="font-display text-xl leading-none text-gold">{SITE.name}</p>
+              <p className="mt-1 text-[11px] tracking-[0.18em] text-zinc-500 uppercase">Admin panel</p>
+            </div>
+          </div>
           <nav className="flex flex-1 flex-col gap-1">
             {links.map((link) => (
               <NavLink
@@ -75,18 +86,34 @@ function AdminShell({
                 to={link.to}
                 end={link.end}
                 className={({ isActive }) =>
-                  `flex items-center gap-2 rounded-xl px-3 py-2 text-sm ${isActive ? 'bg-leaf text-gold' : 'hover:bg-white/5'}`
+                  cn(
+                    'flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition',
+                    isActive
+                      ? 'bg-gold text-leaf-deep shadow-lg shadow-gold/10'
+                      : 'text-zinc-300 hover:bg-white/5 hover:text-white',
+                  )
                 }
               >
                 <link.icon className="size-4" />
-                {link.label}
+                <span className="flex-1">{link.label}</span>
+                {link.to === '/admin/messages' && unread > 0 ? (
+                  <span className="grid min-w-5 place-items-center rounded-full bg-leaf-deep px-1.5 text-[10px] font-bold text-gold">
+                    {unread}
+                  </span>
+                ) : null}
               </NavLink>
             ))}
           </nav>
+          <a
+            href="/"
+            className="mb-2 rounded-2xl px-3 py-2 text-sm text-zinc-400 hover:bg-white/5 hover:text-gold"
+          >
+            ← Back to shop
+          </a>
           <button
             type="button"
             onClick={() => void logout()}
-            className="mt-4 flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-300 hover:bg-white/5"
+            className="flex items-center gap-2 rounded-2xl px-3 py-2 text-sm text-red-300 hover:bg-red-400/10"
           >
             <LogOut className="size-4" />
             Logout
@@ -94,8 +121,11 @@ function AdminShell({
         </aside>
         <div className="min-w-0 flex-1 p-4 md:p-8">
           <div className="relative mb-4 md:hidden">
-            <div className="flex items-center justify-between rounded-2xl border border-gold/50 bg-leaf px-3 py-2 shadow-lg shadow-gold/10">
-              <p className="font-semibold text-gold">{current?.label ?? 'Menu'}</p>
+            <div className="flex items-center justify-between rounded-2xl border border-gold/40 bg-leaf px-3 py-2 shadow-lg shadow-gold/10">
+              <div className="flex min-w-0 items-center gap-2">
+                <LogoMark className="size-9" />
+                <p className="truncate font-semibold text-gold">{current?.label ?? 'Menu'}</p>
+              </div>
               <button
                 type="button"
                 className="rounded-xl bg-gold/15 p-2 text-gold"
@@ -114,11 +144,15 @@ function AdminShell({
                     end={link.end}
                     onClick={() => setOpen(false)}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 rounded-xl px-3 py-3 text-sm ${isActive ? 'bg-leaf text-gold' : 'hover:bg-white/5'}`
+                      cn(
+                        'flex items-center gap-2 rounded-xl px-3 py-3 text-sm',
+                        isActive ? 'bg-gold text-leaf-deep' : 'hover:bg-white/5',
+                      )
                     }
                   >
                     <link.icon className="size-4" />
                     {link.label}
+                    {link.to === '/admin/messages' && unread > 0 ? ` (${unread})` : ''}
                   </NavLink>
                 ))}
                 <button

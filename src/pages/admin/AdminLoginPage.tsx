@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate } from 'react-router-dom'
+import { LogoMark } from '@/components/brand/LogoMark'
 import { useAuth } from '@/context/AuthContext'
+import { SITE } from '@/lib/seed'
 
 export function AdminLoginPage() {
   const { isAdmin, login } = useAuth()
@@ -20,10 +22,17 @@ export function AdminLoginPage() {
   }
 
   return (
-    <div className="grid min-h-svh place-items-center bg-leaf-deep px-4">
-      <form onSubmit={onSubmit} className="w-full max-w-md rounded-3xl bg-white p-8 text-ink shadow-xl">
-        <h1 className="font-display text-3xl text-leaf">Admin login</h1>
-        <p className="mt-1 text-sm text-ink/60">Manage dashboard, products, orders and customers</p>
+    <div className="relative grid min-h-svh place-items-center overflow-hidden bg-leaf-deep px-4">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,rgba(240,196,25,0.16),transparent_36%)]" />
+      <form
+        onSubmit={onSubmit}
+        className="relative w-full max-w-md rounded-3xl border border-gold/20 bg-white p-8 text-ink shadow-2xl"
+      >
+        <div className="flex flex-col items-center text-center">
+          <LogoMark className="size-16" />
+          <h1 className="font-display mt-4 text-3xl text-leaf">{SITE.name}</h1>
+          <p className="mt-1 text-sm text-ink/60">Admin dashboard login</p>
+        </div>
         <label className="mt-6 block text-sm font-semibold">
           Email
           <input
@@ -50,7 +59,7 @@ export function AdminLoginPage() {
         >
           {loading ? 'Checking...' : 'Login'}
         </button>
-        <p className="mt-4 text-xs text-ink/50">Demo: jsagroshop63@gmail.com / admin123</p>
+        <p className="mt-4 text-center text-xs text-ink/50">jsagroshop63@gmail.com / admin123</p>
       </form>
     </div>
   )

@@ -22,7 +22,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <header className="border-b border-leaf/10 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
           <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-            <LogoMark className="h-[4.75rem] w-[4.75rem] sm:h-20 sm:w-20 lg:h-[5.5rem] lg:w-[5.5rem]" />
+            <LogoMark className="h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem] lg:h-20 lg:w-20" />
             <span className="font-display block truncate text-lg leading-none text-leaf sm:text-2xl">{SITE.name}</span>
           </Link>
 
