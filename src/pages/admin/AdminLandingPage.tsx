@@ -1,11 +1,19 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import { normalizeLanding } from '@/lib/seed'
 
-function adsLandingUrl() {
-  if (typeof window === 'undefined') return 'https://sayeed2.vercel.app/landing'
-  return `${window.location.origin}/landing`
+function publicOrigin() {
+  if (typeof window === 'undefined') return ''
+  const { hostname, origin } = window.location
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return (import.meta.env.VITE_SITE_URL || 'https://sayeed2.vercel.app').replace(/\/$/, '')
+  }
+  return origin
+}
+
+function adsUrl() {
+  return `${publicOrigin()}/landing?utm_source=facebook&utm_medium=cpc&utm_campaign=offer`
 }
 
 export function AdminLandingPage() {
@@ -14,11 +22,15 @@ export function AdminLandingPage() {
   const [saving, setSaving] = useState(false)
   const [notice, setNotice] = useState('')
   const [copied, setCopied] = useState(false)
-  const landingUrl = useMemo(() => adsLandingUrl(), [])
+  const [landingUrl, setLandingUrl] = useState('')
 
   useEffect(() => {
     setForm(normalizeLanding(landing))
   }, [landing])
+
+  useEffect(() => {
+    setLandingUrl(adsUrl())
+  }, [])
 
   async function onSubmit(event: FormEvent) {
     event.preventDefault()
@@ -42,7 +54,7 @@ export function AdminLandingPage() {
 
   async function copyLandingUrl() {
     try {
-      await navigator.clipboard.writeText(`${landingUrl}?utm_source=facebook&utm_medium=cpc&utm_campaign=offer`)
+      await navigator.clipboard.writeText(landingUrl || adsUrl())
       setCopied(true)
       window.setTimeout(() => setCopied(false), 2000)
     } catch {
@@ -62,12 +74,12 @@ export function AdminLandingPage() {
       <section className="rounded-2xl border border-gold/30 bg-gold/10 p-4 space-y-3">
         <p className="text-xs font-semibold tracking-[0.18em] text-gold uppercase">Facebook ads</p>
         <p className="text-sm text-zinc-200">
-          Use this URL in Meta Ads. Shop design stays the same. Orders from this page show as Facebook in Admin → Orders.
+          Use this URL in Meta Ads. It follows the live domain automatically. Orders from this page show as Facebook in Admin → Orders.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
             readOnly
-            value={`${landingUrl}?utm_source=facebook&utm_medium=cpc&utm_campaign=offer`}
+            value={landingUrl}
             className="w-full rounded-xl bg-black/30 px-3 py-3 text-sm text-zinc-100"
           />
           <button
