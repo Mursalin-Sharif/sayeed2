@@ -319,7 +319,7 @@ export const seedMedia: LandingMedia[] = [
 export const seedLanding: LandingContent = {
   heroTitle: 'পণ্য নয়, আস্থা বিনিময় করি',
   heroSubtitle: 'দেশি-বিদেশি ফল ও সবজির চারা · নাটোর সদর · ২০ হাজার ফলোয়ারের আস্থা',
-  packageTitle: 'আমাদের কাছে পাবেন:',
+  packageTitle: 'বৈশিষ্ট্য',
   packageItems: [
     'হাইব্রিড পেঁপে চারা (শতভাগ জাতের গ্যারান্টি)',
     'ভিয়েতনামি খাটো জাতের নারিকেল',
