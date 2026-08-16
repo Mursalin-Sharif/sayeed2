@@ -5,6 +5,7 @@ import type { OrderItem, Product } from '@/lib/types'
 import { formatTaka, isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
 import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
+import { DUPLICATE_PRODUCT_UNIT_MESSAGE } from '@/lib/mergeOrder'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackPurchase } from '@/lib/metaPixel'
 
 type Props = {
@@ -140,7 +141,13 @@ export function CheckoutForm({
       onOrdered?.()
       navigate(`/order-success/${order.id}`, { state: { order } })
     } catch (error) {
-      setError(error instanceof Error && error.message ? error.message : 'অর্ডার সম্পন্ন হয়নি, আবার চেষ্টা করুন')
+      setError(
+        error instanceof Error && error.message === DUPLICATE_PRODUCT_UNIT_MESSAGE
+          ? DUPLICATE_PRODUCT_UNIT_MESSAGE
+          : error instanceof Error && error.message
+            ? error.message
+            : 'অর্ডার সম্পন্ন হয়নি, আবার চেষ্টা করুন',
+      )
     } finally {
       setSubmitting(false)
     }

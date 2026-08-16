@@ -37,7 +37,7 @@ import {
   subscribeToOrders,
 } from '@/lib/cloud'
 import { isSupabaseEnabled } from '@/lib/supabase'
-import { applyIncomingOrder } from '@/lib/mergeOrder'
+import { applyIncomingOrder, DuplicateProductUnitError, hasSameProductUnitOrder } from '@/lib/mergeOrder'
 import { readAttribution } from '@/lib/metaPixel'
 import { normalizeLanding, normalizeSite, seedSite } from '@/lib/seed'
 
@@ -269,11 +269,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         campaign: input.campaign || attr.campaign,
       }
       let outcome: ReturnType<typeof applyIncomingOrder> | null = null
+      let duplicate = false
       commit((prev) => {
         const orders = remote ? mergeOrderLists(prev.orders, remote) : prev.orders
+        if (hasSameProductUnitOrder(orders, payload)) {
+          duplicate = true
+          return prev
+        }
         outcome = applyIncomingOrder(orders, payload)
         return { ...prev, orders: outcome.orders }
       })
+      if (duplicate) throw new DuplicateProductUnitError()
       if (!outcome) throw new Error('Order failed')
       const result = outcome as ReturnType<typeof applyIncomingOrder>
       await sync(() => cloudSaveOrder(result.saved))
