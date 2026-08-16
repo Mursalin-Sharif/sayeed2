@@ -13,9 +13,10 @@ type Props = {
   lockItems?: boolean
   onOrdered?: () => void
   alignCenter?: boolean
+  productTitle?: string
 }
 
-export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCenter }: Props) {
+export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCenter, productTitle }: Props) {
   const { placeOrder } = useStore()
   const navigate = useNavigate()
   const location = useLocation()
@@ -41,6 +42,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
     selectable.find((item) => item.id === selectedId) ??
     products.find((line) => line.product.id === selectedId)?.product ??
     products[0]?.product
+  const displayName = productTitle?.trim() || selectedProduct?.name || ''
 
   const lines = useMemo(() => {
     if (selectedProduct && (selectable.length || (products.length === 1 && !lockItems))) {
@@ -96,7 +98,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
     try {
       const items: OrderItem[] = lines.map((line) => ({
         productId: line.product.id,
-        name: line.product.name,
+        name: productTitle?.trim() || line.product.name,
         image: line.product.image,
         price: line.product.price,
         quantity: line.quantity,
@@ -142,7 +144,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
     >
       <section className={`rounded-3xl bg-white p-6 shadow-sm ${alignCenter ? 'text-center' : ''}`}>
         <h3 className="mb-5 text-2xl font-bold text-leaf">Billing details</h3>
-        {selectable.length > 0 && (
+        {selectable.length > 1 ? (
           <label className="mb-4 block">
             <span className="mb-1 block text-sm font-semibold">পণ্য নির্বাচন করুন *</span>
             <select
@@ -158,7 +160,15 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
               ))}
             </select>
           </label>
-        )}
+        ) : selectedProduct && !lockItems ? (
+          <div className="mb-4">
+            <span className="mb-1 block text-sm font-semibold">পণ্য নির্বাচন করুন *</span>
+            <p className="w-full rounded-xl border border-leaf/20 bg-cream px-4 py-3 text-ink">
+              <span className="block font-extrabold leading-snug">{displayName}</span>
+              <span className="mt-1 block text-sm font-semibold text-leaf">{formatTaka(selectedProduct.price)}</span>
+            </p>
+          </div>
+        ) : null}
         {((products.length === 1 && !lockItems) || selectable.length > 0) ? (
           <label className="mb-4 block">
             <span className="mb-1 block text-sm font-semibold">পরিমাণ</span>
@@ -227,7 +237,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
             >
               <img src={line.product.image} alt="" className="size-16 rounded-xl object-cover" onError={(e) => { e.currentTarget.src = '/images/fruits.jpg' }} />
               <div className={alignCenter ? '' : 'flex-1'}>
-                <p className="font-semibold">{line.product.name}</p>
+                <p className="font-semibold">{productTitle?.trim() || line.product.name}</p>
                 <p className="text-sm text-ink/60">
                   {formatTaka(line.product.price)} × {line.quantity}
                 </p>

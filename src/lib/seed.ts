@@ -347,6 +347,9 @@ export const seedLanding: LandingContent = {
   paymentNumber: '01813-514791 · 01725-250188',
   paymentNote: 'অর্ডার কনফার্ম করতে WhatsApp বা Imo-তে মেসেজ দিন। সারা দেশে কুরিয়ার/বাস ডেলিভারি।',
   offerProductId: 'prod_offer_pack',
+  offerTitle: 'মিয়াজাকি আম (সূর্য ডিম)',
+  offerPrice: 850,
+  offerComparePrice: null,
   metaPixelId: '',
 }
 
@@ -386,6 +389,12 @@ export function normalizeLanding(raw?: Partial<LandingContent> | null): LandingC
       !src.offerProductId?.trim() || src.offerProductId === 'prod_papaya'
         ? 'prod_offer_pack'
         : src.offerProductId.trim(),
+    offerTitle: src.offerTitle?.trim() || '',
+    offerPrice: Number.isFinite(Number(src.offerPrice)) && Number(src.offerPrice) >= 0 ? Number(src.offerPrice) : 0,
+    offerComparePrice:
+      src.offerComparePrice == null || !Number.isFinite(Number(src.offerComparePrice))
+        ? null
+        : Number(src.offerComparePrice),
     metaPixelId: src.metaPixelId?.trim() || '',
   }
 }

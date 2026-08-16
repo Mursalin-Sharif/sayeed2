@@ -98,6 +98,9 @@ function asLanding(row: Record<string, unknown>): LandingContent {
     paymentNumber: String(row.payment_number ?? ''),
     paymentNote: String(row.payment_note ?? ''),
     offerProductId: String(row.offer_product_id ?? 'prod_offer_pack'),
+    offerTitle: String(row.offer_title ?? ''),
+    offerPrice: Number(row.offer_price ?? 0),
+    offerComparePrice: row.offer_compare_price == null ? null : Number(row.offer_compare_price),
     metaPixelId: String(row.meta_pixel_id ?? ''),
   })
 }
@@ -346,12 +349,20 @@ export async function cloudSaveLanding(landing: LandingContent) {
     payment_number: landing.paymentNumber,
     payment_note: landing.paymentNote,
     offer_product_id: landing.offerProductId,
+    offer_title: landing.offerTitle ?? '',
+    offer_price: landing.offerPrice ?? 0,
+    offer_compare_price: landing.offerComparePrice,
     meta_pixel_id: landing.metaPixelId ?? '',
   }
   const { error } = await supabase.from('landing_content').upsert(payload)
-  if (error && /meta_pixel_id|column/i.test(error.message)) {
-    const rest = { ...payload }
-    delete (rest as { meta_pixel_id?: string }).meta_pixel_id
+  if (error && /column/i.test(error.message)) {
+    const rest = { ...payload } as Record<string, unknown>
+    if (/offer_title|offer_price|offer_compare_price/i.test(error.message)) {
+      delete rest.offer_title
+      delete rest.offer_price
+      delete rest.offer_compare_price
+    }
+    if (/meta_pixel_id/i.test(error.message)) delete rest.meta_pixel_id
     const retry = await supabase.from('landing_content').upsert(rest)
     fail(retry.error)
     return

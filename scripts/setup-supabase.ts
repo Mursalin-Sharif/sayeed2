@@ -112,6 +112,9 @@ async function seedIfReady() {
     payment_number: seedLanding.paymentNumber,
     payment_note: seedLanding.paymentNote,
     offer_product_id: seedLanding.offerProductId,
+    offer_title: seedLanding.offerTitle,
+    offer_price: seedLanding.offerPrice,
+    offer_compare_price: seedLanding.offerComparePrice,
   }
 
   const products = await supabase.from('products').upsert(productRows)

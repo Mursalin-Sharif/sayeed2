@@ -63,6 +63,9 @@ export function AdminMediaPage() {
     <div className="grid gap-8 lg:grid-cols-[1fr_340px]">
       <div>
         <h1 className="font-display text-3xl text-gold">Landing media</h1>
+        <p className="text-sm text-zinc-400">
+          Photos and videos here show only on the landing / offer page. Home product images are uploaded in Products.
+        </p>
         <p className="mt-1 text-zinc-400">Add, edit or remove images and videos on the offer page</p>
         {notice ? <p className="mt-2 text-sm font-semibold text-emerald-400">{notice}</p> : null}
         <div className="mt-6 grid gap-4 sm:grid-cols-2">

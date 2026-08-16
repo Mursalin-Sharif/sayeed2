@@ -97,6 +97,9 @@ export type LandingContent = {
   paymentNumber: string
   paymentNote: string
   offerProductId: string
+  offerTitle: string
+  offerPrice: number
+  offerComparePrice: number | null
   metaPixelId: string
 }
 

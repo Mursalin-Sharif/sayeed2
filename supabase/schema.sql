@@ -76,6 +76,9 @@ create table if not exists landing_content (
 );
 
 alter table landing_content add column if not exists meta_pixel_id text not null default '';
+alter table landing_content add column if not exists offer_title text not null default '';
+alter table landing_content add column if not exists offer_price numeric not null default 0;
+alter table landing_content add column if not exists offer_compare_price numeric;
 
 alter table products enable row level security;
 alter table orders enable row level security;

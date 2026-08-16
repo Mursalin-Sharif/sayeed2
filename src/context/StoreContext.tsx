@@ -99,6 +99,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
             landing: {
               ...landing,
               metaPixelId: landing.metaPixelId?.trim() || prev.landing.metaPixelId,
+              offerTitle: landing.offerTitle?.trim() || prev.landing.offerTitle || '',
+              offerPrice: landing.offerPrice > 0 ? landing.offerPrice : prev.landing.offerPrice || 0,
+              offerComparePrice: landing.offerComparePrice ?? prev.landing.offerComparePrice ?? null,
             },
             media: cloud.media.length ? cloud.media : prev.media,
             slides: cloud.slides.length ? cloud.slides : prev.slides,

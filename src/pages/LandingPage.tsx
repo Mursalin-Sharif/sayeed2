@@ -3,7 +3,7 @@ import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackViewContent } from '@/lib/metaPixel'
 import { SITE, normalizeLanding } from '@/lib/seed'
-import { useEffect, type MouseEvent } from 'react'
+import { useEffect, useMemo, type MouseEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 
 function youtubeId(url: string) {
@@ -70,23 +70,48 @@ export function LandingPage() {
     products.find((item) => item.id === content.offerProductId) ??
     products.find((item) => item.id === 'prod_offer_pack') ??
     products[0]
+  const landingProduct = useMemo(
+    () =>
+      offer
+        ? {
+            ...offer,
+            name: content.offerTitle.trim() || offer.name,
+            price: content.offerPrice > 0 ? content.offerPrice : offer.price,
+            comparePrice:
+              content.offerComparePrice && content.offerComparePrice > 0
+                ? content.offerComparePrice
+                : offer.comparePrice,
+          }
+        : undefined,
+    [content.offerComparePrice, content.offerPrice, content.offerTitle, offer],
+  )
   const gallery = (media ?? []).filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
 
   useEffect(() => {
-    if (!offer) return
+    if (!landingProduct) return
     trackViewContent({
-      id: offer.id,
-      name: offer.name,
-      value: offer.price,
-      category: offer.category,
+      id: landingProduct.id,
+      name: landingProduct.name,
+      value: landingProduct.price,
+      category: landingProduct.category,
     })
-  }, [offer])
+  }, [landingProduct])
 
   return (
     <div className="bg-white text-center">
       <section className="bg-leaf px-4 py-14 text-white">
         <h1 className="mx-auto max-w-4xl font-display text-3xl leading-snug md:text-5xl">{content.heroTitle}</h1>
         <p className="mx-auto mt-4 max-w-3xl text-gold">{content.heroSubtitle}</p>
+        <a
+          href="#order-form"
+          onClick={(event) => {
+            scrollToOrder(event)
+            trackLandingCheckout(pathname, landingProduct)
+          }}
+          className="mt-8 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
+        >
+          অর্ডার করুন
+        </a>
         <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-4 text-leaf">
           <h2 className="text-xl font-extrabold md:text-2xl">{content.packageTitle}</h2>
         </div>
@@ -118,7 +143,7 @@ export function LandingPage() {
           href="#order-form"
           onClick={(event) => {
             scrollToOrder(event)
-            trackLandingCheckout(pathname, offer)
+            trackLandingCheckout(pathname, landingProduct)
           }}
           className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
         >
@@ -152,7 +177,19 @@ export function LandingPage() {
                   )}
                 </div>
               ) : (
-                <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
+                <a
+                  href="#order-form"
+                  onClick={(event) => {
+                    scrollToOrder(event)
+                    trackLandingCheckout(pathname, landingProduct)
+                  }}
+                  className="block"
+                >
+                  <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
+                  <span className="block bg-gold py-3 text-lg font-extrabold text-black">
+                    অর্ডার করুন
+                  </span>
+                </a>
               )}
               {(item.title || item.caption) && (
                 <figcaption className="bg-leaf px-3 py-2 text-center text-sm text-gold">
@@ -194,11 +231,11 @@ export function LandingPage() {
       <section className="bg-cream px-4 py-12">
         <div className="mx-auto max-w-6xl">
           <h2 className="mb-6 text-3xl font-bold text-leaf">অর্ডার করুন</h2>
-          {offer ? (
+          {landingProduct ? (
             <CheckoutForm
               alignCenter
-              catalog={products}
-              products={[{ product: offer, quantity: 1 }]}
+              productTitle={landingProduct.name}
+              products={[{ product: landingProduct, quantity: 1 }]}
             />
           ) : (
             <p>অফার পণ্য পাওয়া যায়নি। হোম পেজ থেকে পণ্য বেছে নিন।</p>
