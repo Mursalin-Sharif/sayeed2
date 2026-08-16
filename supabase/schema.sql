@@ -79,6 +79,35 @@ alter table landing_content add column if not exists meta_pixel_id text not null
 alter table landing_content add column if not exists offer_title text not null default '';
 alter table landing_content add column if not exists offer_price numeric not null default 0;
 alter table landing_content add column if not exists offer_compare_price numeric;
+alter table landing_content add column if not exists offer_media_ids jsonb not null default '[]'::jsonb;
+alter table landing_content add column if not exists cta_label text not null default '';
+alter table landing_content add column if not exists checkout_title text not null default '';
+alter table landing_content add column if not exists help_title text not null default '';
+alter table landing_content add column if not exists help_subtitle text not null default '';
+
+create table if not exists site_settings (
+  id int primary key default 1,
+  name text not null default '',
+  name_en text not null default '',
+  slogan text not null default '',
+  tagline text not null default '',
+  about text not null default '',
+  phone text not null default '',
+  phone2 text not null default '',
+  email text not null default '',
+  address text not null default '',
+  hours text not null default '',
+  facebook text not null default '',
+  home_banner_title text not null default '',
+  home_banner_cta text not null default '',
+  header_offer_label text not null default ''
+);
+
+alter table site_settings enable row level security;
+drop policy if exists "public read site" on site_settings;
+drop policy if exists "admin all site" on site_settings;
+create policy "public read site" on site_settings for select using (true);
+create policy "admin all site" on site_settings for all using (auth.role() = 'authenticated') with check (auth.role() = 'authenticated');
 
 alter table products enable row level security;
 alter table orders enable row level security;

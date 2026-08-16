@@ -3,8 +3,9 @@ import { Menu, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
-import { SITE } from '@/lib/seed'
 import { useCart } from '@/context/CartContext'
+import { useStore } from '@/context/StoreContext'
+import { siteWhatsapp } from '@/lib/seed'
 import { cn } from '@/lib/utils'
 
 const links = [
@@ -15,6 +16,7 @@ const links = [
 
 export function Layout({ children }: { children: ReactNode }) {
   const { count } = useCart()
+  const { site } = useStore()
   const [open, setOpen] = useState(false)
 
   return (
@@ -23,7 +25,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
           <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">
             <LogoMark className="h-16 w-16 sm:h-[4.5rem] sm:w-[4.5rem] lg:h-20 lg:w-20" />
-            <span className="block truncate text-xl font-extrabold leading-none tracking-tight text-leaf sm:text-3xl">{SITE.name}</span>
+            <span className="block truncate text-xl font-extrabold leading-none tracking-tight text-leaf sm:text-3xl">{site.name}</span>
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex">
@@ -46,7 +48,7 @@ export function Layout({ children }: { children: ReactNode }) {
               to="/offer"
               className="ml-2 rounded-full bg-gold px-4 py-2 text-sm font-bold text-leaf-deep shadow-sm hover:bg-gold-dark"
             >
-              অফার
+              {site.headerOfferLabel}
             </Link>
           </nav>
 
@@ -77,7 +79,7 @@ export function Layout({ children }: { children: ReactNode }) {
                 onClick={() => setOpen(false)}
                 className="rounded-xl bg-gold px-3 py-3 text-center font-bold text-leaf-deep"
               >
-                বর্ষাকালীন অফার
+                {site.headerOfferLabel}
               </Link>
             </div>
           </div>
@@ -89,11 +91,10 @@ export function Layout({ children }: { children: ReactNode }) {
       <footer className="mt-16 bg-leaf-deep text-cream">
         <div className="mx-auto grid max-w-6xl grid-cols-2 gap-6 px-4 py-10 text-center lg:grid-cols-4 lg:gap-10 lg:py-14">
           <div className="col-span-2">
-            <p className="font-display text-2xl text-gold lg:text-3xl">{SITE.name}</p>
-            <p className="mx-auto mt-3 max-w-md text-cream/80">{SITE.tagline}</p>
+            <p className="font-display text-2xl text-gold lg:text-3xl">{site.name}</p>
+            <p className="mx-auto mt-3 max-w-md text-cream/80">{site.tagline}</p>
             <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-cream/70">
-              {SITE.slogan}. সকল প্রকার দেশি-বিদেশি ফল ও সবজির চারা। সারা বাংলাদেশে কুরিয়ার ও বাস সার্ভিসে
-              ডেলিভারি। প্রতিটি চারায় শতভাগ জাতের গ্যারান্টি।
+              {site.slogan}. {site.about}
             </p>
           </div>
           <div>
@@ -103,7 +104,7 @@ export function Layout({ children }: { children: ReactNode }) {
               <Link to="/offer">ল্যান্ডিং অফার</Link>
               <Link to="/contact">যোগাযোগ</Link>
               <a
-                href={SITE.facebook}
+                href={site.facebook}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="font-semibold text-gold underline underline-offset-2"
@@ -114,24 +115,24 @@ export function Layout({ children }: { children: ReactNode }) {
           </div>
           <div>
             <p className="mb-3 font-bold text-gold">যোগাযোগ</p>
-            <p className="text-sm">{SITE.address}</p>
+            <p className="text-sm">{site.address}</p>
             <p className="text-sm">
-              <a href={`tel:${SITE.phone2}`}>{SITE.phone2}</a> (WhatsApp)
+              <a href={`tel:${site.phone2}`}>{site.phone2}</a> (WhatsApp)
             </p>
             <p className="text-sm">
-              <a href={`tel:${SITE.phone}`}>{SITE.phone}</a> (WhatsApp)
+              <a href={`tel:${site.phone}`}>{site.phone}</a> (WhatsApp)
             </p>
           </div>
         </div>
         <div className="border-t border-white/10 py-4 text-center text-xs text-cream/60">
-          © {new Date().getFullYear()} {SITE.nameEn}. All rights reserved.
+          © {new Date().getFullYear()} {site.nameEn}. All rights reserved.
         </div>
       </footer>
 
       <MobileBottomNav />
 
       <a
-        href={`https://wa.me/${SITE.whatsapp}`}
+        href={`https://wa.me/${siteWhatsapp(site)}`}
         target="_blank"
         rel="noreferrer"
         className="fixed right-3 z-[1002] grid size-14 place-items-center rounded-full bg-[#25D366] text-white shadow-xl animate-wa-bounce bottom-[calc(72px+env(safe-area-inset-bottom,0px))] lg:bottom-5 lg:right-5"

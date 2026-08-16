@@ -100,7 +100,29 @@ export type LandingContent = {
   offerTitle: string
   offerPrice: number
   offerComparePrice: number | null
+  offerMediaIds: string[]
   metaPixelId: string
+  ctaLabel: string
+  checkoutTitle: string
+  helpTitle: string
+  helpSubtitle: string
+}
+
+export type SiteContent = {
+  name: string
+  nameEn: string
+  slogan: string
+  tagline: string
+  about: string
+  phone: string
+  phone2: string
+  email: string
+  address: string
+  hours: string
+  facebook: string
+  homeBannerTitle: string
+  homeBannerCta: string
+  headerOfferLabel: string
 }
 
 export type ContactMessage = {
@@ -131,6 +153,7 @@ export type StoreSnapshot = {
   slides: CarouselSlide[]
   media: LandingMedia[]
   landing: LandingContent
+  site: SiteContent
   customers: Customer[]
   messages: ContactMessage[]
 }

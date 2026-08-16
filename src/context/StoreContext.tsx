@@ -15,6 +15,7 @@ import type {
   LandingMedia,
   Order,
   Product,
+  SiteContent,
   StoreSnapshot,
 } from '@/lib/types'
 import { uid } from '@/lib/utils'
@@ -26,6 +27,7 @@ import {
   cloudDeleteSlide,
   cloudInsertOrder,
   cloudSaveLanding,
+  cloudSaveSite,
   cloudUpdateOrder,
   cloudUpdateOrderStatus,
   cloudUpsertMedia,
@@ -38,6 +40,7 @@ import {
 import { isSupabaseEnabled } from '@/lib/supabase'
 import { applyIncomingOrder, DuplicateProductUnitError, hasSameProductUnitOrder } from '@/lib/mergeOrder'
 import { readAttribution } from '@/lib/metaPixel'
+import { seedSite } from '@/lib/seed'
 
 type StoreContextValue = StoreSnapshot & {
   loading: boolean
@@ -53,6 +56,7 @@ type StoreContextValue = StoreSnapshot & {
   saveMedia: (item: LandingMedia) => Promise<void>
   deleteMedia: (id: string) => Promise<void>
   saveLanding: (landing: LandingContent) => Promise<void>
+  saveSite: (site: SiteContent) => Promise<void>
   addMessage: (input: Omit<ContactMessage, 'id' | 'read' | 'createdAt'>) => Promise<ContactMessage>
   markMessageRead: (id: string) => Promise<void>
   deleteMessage: (id: string) => Promise<void>
@@ -102,10 +106,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               offerTitle: landing.offerTitle?.trim() || prev.landing.offerTitle || '',
               offerPrice: landing.offerPrice > 0 ? landing.offerPrice : prev.landing.offerPrice || 0,
               offerComparePrice: landing.offerComparePrice ?? prev.landing.offerComparePrice ?? null,
+              offerMediaIds: Array.isArray(landing.offerMediaIds)
+                ? landing.offerMediaIds
+                : prev.landing.offerMediaIds ?? [],
+              ctaLabel: landing.ctaLabel?.trim() || prev.landing.ctaLabel,
+              checkoutTitle: landing.checkoutTitle?.trim() || prev.landing.checkoutTitle,
+              helpTitle: landing.helpTitle?.trim() || prev.landing.helpTitle,
+              helpSubtitle: landing.helpSubtitle?.trim() || prev.landing.helpSubtitle,
             },
             media: cloud.media.length ? cloud.media : prev.media,
             slides: cloud.slides.length ? cloud.slides : prev.slides,
             messages: cloud.messages.length ? cloud.messages : prev.messages ?? [],
+            site:
+              cloud.site &&
+              cloud.site.name === seedSite.name &&
+              cloud.site.phone === seedSite.phone &&
+              cloud.site.slogan === seedSite.slogan
+                ? prev.site ?? cloud.site
+                : cloud.site ?? prev.site,
           })
         })
       })
@@ -299,6 +317,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [commit, sync],
   )
 
+  const saveSite = useCallback(
+    async (site: SiteContent) => {
+      commit((prev) => ({ ...prev, site }))
+      await sync(() => cloudSaveSite(site))
+    },
+    [commit, sync],
+  )
+
   const addMessage = useCallback(
     async (input: Omit<ContactMessage, 'id' | 'read' | 'createdAt'>) => {
       const message: ContactMessage = {
@@ -350,6 +376,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveMedia,
       deleteMedia,
       saveLanding,
+      saveSite,
       addMessage,
       markMessageRead,
       deleteMessage,
@@ -368,6 +395,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveMedia,
       deleteMedia,
       saveLanding,
+      saveSite,
       addMessage,
       markMessageRead,
       deleteMessage,

@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { DISTRICTS, SHIPPING, type ShippingType } from '@/lib/districts'
 import type { OrderItem, Product } from '@/lib/types'
 import { formatTaka, isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
+import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
 import { DUPLICATE_PRODUCT_UNIT_MESSAGE } from '@/lib/mergeOrder'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackPurchase } from '@/lib/metaPixel'
@@ -163,10 +164,17 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
         ) : selectedProduct && !lockItems ? (
           <div className="mb-4">
             <span className="mb-1 block text-sm font-semibold">পণ্য নির্বাচন করুন *</span>
-            <p className="w-full rounded-xl border border-leaf/20 bg-cream px-4 py-3 text-ink">
-              <span className="block font-extrabold leading-snug">{displayName}</span>
-              <span className="mt-1 block text-sm font-semibold text-leaf">{formatTaka(selectedProduct.price)}</span>
-            </p>
+            <div className="flex items-center gap-3 rounded-xl border border-leaf/20 bg-cream px-3 py-3 text-ink">
+              <SafeImage
+                src={selectedProduct.image}
+                alt={displayName}
+                className="size-16 shrink-0 rounded-xl object-cover"
+              />
+              <div className="min-w-0 text-left">
+                <p className="font-extrabold leading-snug">{displayName}</p>
+                <p className="mt-1 text-sm font-semibold text-leaf">{formatTaka(selectedProduct.price)}</p>
+              </div>
+            </div>
           </div>
         ) : null}
         {((products.length === 1 && !lockItems) || selectable.length > 0) ? (
@@ -233,10 +241,14 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
           {lines.map((line) => (
             <div
               key={line.product.id}
-              className={`flex items-center gap-3 py-3 ${alignCenter ? 'flex-col justify-center' : ''}`}
+              className="flex items-center gap-3 py-3"
             >
-              <img src={line.product.image} alt="" className="size-16 rounded-xl object-cover" onError={(e) => { e.currentTarget.src = '/images/fruits.jpg' }} />
-              <div className={alignCenter ? '' : 'flex-1'}>
+              <SafeImage
+                src={line.product.image}
+                alt={productTitle?.trim() || line.product.name}
+                className="size-16 shrink-0 rounded-xl object-cover"
+              />
+              <div className="min-w-0 flex-1 text-left">
                 <p className="font-semibold">{productTitle?.trim() || line.product.name}</p>
                 <p className="text-sm text-ink/60">
                   {formatTaka(line.product.price)} × {line.quantity}

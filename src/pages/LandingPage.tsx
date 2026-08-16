@@ -2,7 +2,7 @@ import { CheckoutForm } from '@/components/order/CheckoutForm'
 import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackViewContent } from '@/lib/metaPixel'
-import { SITE, normalizeLanding } from '@/lib/seed'
+import { normalizeLanding } from '@/lib/seed'
 import { formatTaka } from '@/lib/utils'
 import { useEffect, useMemo, type MouseEvent } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -63,29 +63,6 @@ function trackLandingCheckout(
   )
 }
 
-function OrderCta({
-  pathname,
-  offer,
-  className = 'mt-8 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg',
-}: {
-  pathname: string
-  offer: { id: string; name: string; price: number } | undefined
-  className?: string
-}) {
-  return (
-    <a
-      href="#order-form"
-      onClick={(event) => {
-        scrollToOrder(event)
-        trackLandingCheckout(pathname, offer)
-      }}
-      className={className}
-    >
-      অর্ডার করুন
-    </a>
-  )
-}
-
 export function LandingPage() {
   const { landing, media, products } = useStore()
   const { pathname } = useLocation()
@@ -94,28 +71,37 @@ export function LandingPage() {
     products.find((item) => item.id === content.offerProductId) ??
     products.find((item) => item.id === 'prod_offer_pack') ??
     products[0]
-  const packageLines = useMemo(() => parsePackageItems(content.packageItems), [content.packageItems])
-  const featureHeading = packageLines.find((item) => item.kind === 'heading')?.text?.trim() || ''
-  const landingProduct = useMemo(() => {
-    if (!offer) return undefined
-    const name = content.offerTitle.trim() || featureHeading || offer.name
-    const namedMatch = products.find(
-      (item) => item.name === name || (name && item.name.includes(name.slice(0, 8))),
-    )
-    const mangoMatch = /মিয়াজাকি|সূর্য|সুর্য/.test(name)
-      ? products.find((item) => item.id === 'prod_surjodim' || /সুর্য|মিয়াজাকি/.test(item.name))
-      : undefined
-    const price =
-      content.offerPrice > 0 ? content.offerPrice : (namedMatch?.price ?? mangoMatch?.price ?? offer.price)
-    const comparePrice =
-      content.offerComparePrice && content.offerComparePrice > 0
-        ? content.offerComparePrice
-        : namedMatch?.comparePrice ?? mangoMatch?.comparePrice ?? offer.comparePrice
-    return { ...offer, name, price, comparePrice }
-  }, [content.offerComparePrice, content.offerPrice, content.offerTitle, featureHeading, offer, products])
-  const gallery = (media ?? []).filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
-  const featureLines = packageLines.filter(
-    (item) => !(item.kind === 'heading' && landingProduct && item.text.trim() === landingProduct.name),
+  const gallery = useMemo(() => {
+    const list = media ?? []
+    const byId = new Map(list.map((item) => [item.id, item]))
+    if (content.offerMediaIds.length) {
+      return content.offerMediaIds.map((id) => byId.get(id)).filter((item): item is NonNullable<typeof item> => Boolean(item))
+    }
+    return list.filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
+  }, [content.offerMediaIds, media])
+  const coverImage =
+    gallery.find((item) => item.type === 'image')?.url ||
+    gallery[0]?.url ||
+    ''
+  const landingProduct = useMemo(
+    () =>
+      offer
+        ? {
+            ...offer,
+            name: content.offerTitle.trim() || offer.name,
+            price: content.offerPrice > 0 ? content.offerPrice : offer.price,
+            comparePrice:
+              content.offerComparePrice && content.offerComparePrice > 0
+                ? content.offerComparePrice
+                : offer.comparePrice,
+            image: coverImage || offer.image,
+            gallery: [
+              ...gallery.filter((item) => item.type === 'image').map((item) => item.url),
+              ...offer.gallery.filter((url) => url && url !== coverImage),
+            ],
+          }
+        : undefined,
+    [content.offerComparePrice, content.offerPrice, content.offerTitle, coverImage, gallery, offer],
   )
 
   useEffect(() => {
@@ -131,7 +117,9 @@ export function LandingPage() {
   return (
     <div className="bg-white text-center">
       <section className="bg-leaf px-4 py-14 text-white">
-        <p className="text-sm font-semibold text-gold">{content.heroTitle}</p>
+        {content.heroTitle && content.heroTitle !== landingProduct?.name ? (
+          <p className="text-sm font-semibold text-gold">{content.heroTitle}</p>
+        ) : null}
         <h1 className="mx-auto mt-3 max-w-4xl font-display text-3xl leading-snug md:text-5xl">
           {landingProduct?.name || content.heroTitle}
         </h1>
@@ -144,14 +132,26 @@ export function LandingPage() {
             ) : null}
           </div>
         ) : null}
-        <OrderCta pathname={pathname} offer={landingProduct} />
+        <a
+          href="#order-form"
+          onClick={(event) => {
+            scrollToOrder(event)
+            trackLandingCheckout(pathname, landingProduct)
+          }}
+          className="mt-8 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
+        >
+          {content.ctaLabel}
+        </a>
         <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-4 text-leaf">
           <h2 className="text-xl font-extrabold md:text-2xl">{content.packageTitle}</h2>
         </div>
         <div className="mx-auto mt-8 max-w-2xl space-y-3">
-          {featureLines.map((item, i) =>
+          {parsePackageItems(content.packageItems).map((item, i) =>
             item.kind === 'heading' ? (
-              <p key={`heading-${i}`} className="text-center text-lg font-extrabold leading-snug text-cream md:text-xl">
+              <p
+                key={`heading-${i}`}
+                className={`text-center font-extrabold leading-snug text-gold ${i === 0 ? 'text-2xl md:text-3xl' : 'text-lg text-cream md:text-xl'}`}
+              >
                 {item.text}
               </p>
             ) : (
@@ -169,11 +169,16 @@ export function LandingPage() {
             ),
           )}
         </div>
-        <OrderCta
-          pathname={pathname}
-          offer={landingProduct}
+        <a
+          href="#order-form"
+          onClick={(event) => {
+            scrollToOrder(event)
+            trackLandingCheckout(pathname, landingProduct)
+          }}
           className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
-        />
+        >
+          {content.ctaLabel}
+        </a>
       </section>
 
       <section className="px-4 py-12">
@@ -211,7 +216,9 @@ export function LandingPage() {
                   className="block"
                 >
                   <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
-                  <span className="block bg-gold py-3 text-lg font-extrabold text-black">অর্ডার করুন</span>
+                  <span className="block bg-gold py-3 text-lg font-extrabold text-black">
+                    {content.ctaLabel}
+                  </span>
                 </a>
               )}
               {(item.title || item.caption) && (
@@ -238,22 +245,25 @@ export function LandingPage() {
 
       <section className="bg-gold px-4 py-10">
         <p className="mx-auto max-w-3xl text-lg font-extrabold leading-snug text-leaf-deep md:text-2xl">
-          ওয়েবসাইটে অর্ডার করতে সমস্যা হলে বা অর্ডার করতে না পারলে
+          {content.helpTitle}
         </p>
-        <p className="mt-3 text-lg font-extrabold text-leaf-deep md:text-2xl">প্রয়োজনে কল করুন-</p>
+        <p className="mt-3 text-lg font-extrabold text-leaf-deep md:text-2xl">{content.helpSubtitle}</p>
         <p className="mt-3 space-y-1 text-2xl font-extrabold text-leaf-deep md:text-3xl">
-          <a href={`tel:${SITE.phone2}`} className="block">
-            {SITE.phone2}
-          </a>
-          <a href={`tel:${SITE.phone}`} className="block">
-            {SITE.phone}
-          </a>
+          {content.paymentNumber
+            .split(/[·,|\n]+/)
+            .map((item) => item.trim())
+            .filter(Boolean)
+            .map((phone) => (
+              <a key={phone} href={`tel:${phone.replace(/[\s-]/g, '')}`} className="block">
+                {phone}
+              </a>
+            ))}
         </p>
       </section>
 
       <section className="bg-cream px-4 py-12">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-6 text-3xl font-bold text-leaf">অর্ডার করুন</h2>
+          <h2 className="mb-6 text-3xl font-bold text-leaf">{content.checkoutTitle}</h2>
           {landingProduct ? (
             <CheckoutForm
               alignCenter

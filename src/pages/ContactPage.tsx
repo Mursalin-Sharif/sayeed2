@@ -1,11 +1,11 @@
 import { useState, type FormEvent } from 'react'
-import { SITE } from '@/lib/seed'
 import { Mail, MapPin, Phone } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
+import { siteWhatsapp } from '@/lib/seed'
 import { isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
 
 export function ContactPage() {
-  const { addMessage } = useStore()
+  const { addMessage, site } = useStore()
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
@@ -39,36 +39,36 @@ export function ContactPage() {
     <div className="mx-auto max-w-6xl px-4 py-12 text-center">
       <h1 className="font-display text-4xl text-leaf">যোগাযোগ</h1>
       <p className="mx-auto mt-2 max-w-2xl text-ink/70">
-        গাছ, ডেলিভারি বা অর্ডার নিয়ে যেকোনো প্রশ্ন থাকলে কল/WhatsApp/Imo করুন। {SITE.slogan}।
+        গাছ, ডেলিভারি বা অর্ডার নিয়ে যেকোনো প্রশ্ন থাকলে কল/WhatsApp/Imo করুন। {site.slogan}।
       </p>
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         <div className="space-y-4 rounded-3xl bg-white p-8 shadow-sm">
           <p className="flex items-start justify-center gap-3">
             <MapPin className="mt-1 shrink-0 text-leaf-mid" />
-            {SITE.address}
+            {site.address}
           </p>
           <p className="flex items-start justify-center gap-3">
             <Phone className="mt-1 shrink-0 text-leaf-mid" />
             <span>
-              <a href={`tel:${SITE.phone2}`}>{SITE.phone2}</a> (WhatsApp / Imo)
+              <a href={`tel:${site.phone2}`}>{site.phone2}</a> (WhatsApp / Imo)
               <br />
-              <a href={`tel:${SITE.phone}`}>{SITE.phone}</a> (WhatsApp / Imo)
+              <a href={`tel:${site.phone}`}>{site.phone}</a> (WhatsApp / Imo)
             </span>
           </p>
           <p className="flex items-start justify-center gap-3">
             <Mail className="mt-1 shrink-0 text-leaf-mid" />
-            {SITE.email}
+            {site.email}
           </p>
-          <p className="text-sm text-ink/60">{SITE.hours}</p>
+          <p className="text-sm text-ink/60">{site.hours}</p>
           <div className="grid grid-cols-2 gap-3">
             <a
-              href={`https://wa.me/${SITE.whatsapp}`}
+              href={`https://wa.me/${siteWhatsapp(site)}`}
               className="rounded-full bg-[#25D366] px-3 py-3 text-center text-sm font-bold text-white sm:px-5 sm:text-base"
             >
               WhatsApp / Imo
             </a>
             <a
-              href={SITE.facebook}
+              href={site.facebook}
               target="_blank"
               rel="noreferrer"
               className="rounded-full bg-[#1877F2] px-3 py-3 text-center text-sm font-bold text-white sm:px-5 sm:text-base"

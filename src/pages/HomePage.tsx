@@ -3,10 +3,9 @@ import { FeatureCarousel } from '@/components/home/FeatureCarousel'
 import { HeroCarousel } from '@/components/home/HeroCarousel'
 import { ProductCard } from '@/components/product/ProductCard'
 import { useStore } from '@/context/StoreContext'
-import { SITE } from '@/lib/seed'
 
 export function HomePage() {
-  const { products } = useStore()
+  const { products, site } = useStore()
 
   return (
     <div>
@@ -19,11 +18,11 @@ export function HomePage() {
           className="mx-auto flex max-w-6xl flex-col items-center gap-1.5 overflow-hidden rounded-2xl bg-leaf px-4 py-3 text-center text-white lg:gap-3 lg:rounded-3xl lg:px-8 lg:py-5"
         >
           <div>
-            <p className="text-xs text-gold lg:text-sm">{SITE.slogan}</p>
-            <h2 className="font-display text-base leading-snug lg:text-2xl">হাইব্রিড পেঁপে চারা · শতভাগ জাতের গ্যারান্টি</h2>
+            <p className="text-xs text-gold lg:text-sm">{site.slogan}</p>
+            <h2 className="font-display text-base leading-snug lg:text-2xl">{site.homeBannerTitle}</h2>
           </div>
           <span className="rounded-full bg-gold px-4 py-1.5 text-xs font-bold text-leaf-deep lg:px-6 lg:py-2 lg:text-sm">
-            অফার পেজ দেখুন
+            {site.homeBannerCta}
           </span>
         </Link>
       </section>

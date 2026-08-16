@@ -4,11 +4,12 @@ import type {
   LandingMedia,
   Order,
   Product,
+  SiteContent,
   StoreSnapshot,
 } from './types'
 import { isSupabaseEnabled, supabase } from './supabase'
 import { customersFromOrders } from './localStore'
-import { normalizeLanding, seedLanding } from './seed'
+import { normalizeLanding, normalizeSite, seedLanding, seedSite } from './seed'
 
 function fail(error: { message: string } | null) {
   if (error) throw new Error(error.message)
@@ -101,18 +102,45 @@ function asLanding(row: Record<string, unknown>): LandingContent {
     offerTitle: String(row.offer_title ?? ''),
     offerPrice: Number(row.offer_price ?? 0),
     offerComparePrice: row.offer_compare_price == null ? null : Number(row.offer_compare_price),
+    offerMediaIds: Array.isArray(row.offer_media_ids)
+      ? (row.offer_media_ids as unknown[]).map((id) => String(id))
+      : [],
     metaPixelId: String(row.meta_pixel_id ?? ''),
+    ctaLabel: String(row.cta_label ?? ''),
+    checkoutTitle: String(row.checkout_title ?? ''),
+    helpTitle: String(row.help_title ?? ''),
+    helpSubtitle: String(row.help_subtitle ?? ''),
+  })
+}
+
+function asSite(row: Record<string, unknown>): SiteContent {
+  return normalizeSite({
+    name: String(row.name ?? ''),
+    nameEn: String(row.name_en ?? ''),
+    slogan: String(row.slogan ?? ''),
+    tagline: String(row.tagline ?? ''),
+    about: String(row.about ?? ''),
+    phone: String(row.phone ?? ''),
+    phone2: String(row.phone2 ?? ''),
+    email: String(row.email ?? ''),
+    address: String(row.address ?? ''),
+    hours: String(row.hours ?? ''),
+    facebook: String(row.facebook ?? ''),
+    homeBannerTitle: String(row.home_banner_title ?? ''),
+    homeBannerCta: String(row.home_banner_cta ?? ''),
+    headerOfferLabel: String(row.header_offer_label ?? ''),
   })
 }
 
 export async function fetchCloudSnapshot(): Promise<StoreSnapshot | null> {
   if (!isSupabaseEnabled || !supabase) return null
-  const [products, orders, slides, media, landing] = await Promise.all([
+  const [products, orders, slides, media, landing, site] = await Promise.all([
     supabase.from('products').select('*').order('created_at', { ascending: false }),
     supabase.from('orders').select('*').order('created_at', { ascending: false }),
     supabase.from('carousel_slides').select('*').order('sort_order'),
     supabase.from('landing_media').select('*').order('sort_order'),
     supabase.from('landing_content').select('*').eq('id', 1).maybeSingle(),
+    supabase.from('site_settings').select('*').eq('id', 1).maybeSingle(),
   ])
   if (products.error || orders.error) return null
   const orderList = (orders.data ?? []).map((row) => asOrder(row as Record<string, unknown>))
@@ -122,6 +150,7 @@ export async function fetchCloudSnapshot(): Promise<StoreSnapshot | null> {
     slides: (slides.data ?? []).map((row) => asSlide(row as Record<string, unknown>)),
     media: (media.data ?? []).map((row) => asMedia(row as Record<string, unknown>)),
     landing: landing.data ? asLanding(landing.data as Record<string, unknown>) : seedLanding,
+    site: site.data && !site.error ? asSite(site.data as Record<string, unknown>) : seedSite,
     customers: customersFromOrders(orderList),
     messages: [],
   }
@@ -352,7 +381,12 @@ export async function cloudSaveLanding(landing: LandingContent) {
     offer_title: landing.offerTitle ?? '',
     offer_price: landing.offerPrice ?? 0,
     offer_compare_price: landing.offerComparePrice,
+    offer_media_ids: landing.offerMediaIds ?? [],
     meta_pixel_id: landing.metaPixelId ?? '',
+    cta_label: landing.ctaLabel ?? '',
+    checkout_title: landing.checkoutTitle ?? '',
+    help_title: landing.helpTitle ?? '',
+    help_subtitle: landing.helpSubtitle ?? '',
   }
   const { error } = await supabase.from('landing_content').upsert(payload)
   if (error && /column/i.test(error.message)) {
@@ -362,11 +396,42 @@ export async function cloudSaveLanding(landing: LandingContent) {
       delete rest.offer_price
       delete rest.offer_compare_price
     }
+    if (/offer_media_ids/i.test(error.message)) delete rest.offer_media_ids
     if (/meta_pixel_id/i.test(error.message)) delete rest.meta_pixel_id
+    if (/cta_label|checkout_title|help_title|help_subtitle/i.test(error.message)) {
+      delete rest.cta_label
+      delete rest.checkout_title
+      delete rest.help_title
+      delete rest.help_subtitle
+    }
     const retry = await supabase.from('landing_content').upsert(rest)
     fail(retry.error)
     return
   }
+  fail(error)
+}
+
+export async function cloudSaveSite(site: SiteContent) {
+  if (!supabase) return
+  const payload = {
+    id: 1,
+    name: site.name,
+    name_en: site.nameEn,
+    slogan: site.slogan,
+    tagline: site.tagline,
+    about: site.about,
+    phone: site.phone,
+    phone2: site.phone2,
+    email: site.email,
+    address: site.address,
+    hours: site.hours,
+    facebook: site.facebook,
+    home_banner_title: site.homeBannerTitle,
+    home_banner_cta: site.homeBannerCta,
+    header_offer_label: site.headerOfferLabel,
+  }
+  const { error } = await supabase.from('site_settings').upsert(payload)
+  if (error && /relation|table|column/i.test(error.message)) return
   fail(error)
 }
 

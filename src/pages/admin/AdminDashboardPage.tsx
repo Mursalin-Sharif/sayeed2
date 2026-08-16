@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import {
   ArrowUpRight,
   Banknote,
+  Globe,
   Mail,
   Megaphone,
   Package,
@@ -10,7 +11,6 @@ import {
   Users,
 } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
-import { SITE } from '@/lib/seed'
 import { groupOrdersForAdmin } from '@/lib/mergeOrder'
 import { cn, formatDate, formatTaka } from '@/lib/utils'
 
@@ -33,7 +33,7 @@ const statusClass: Record<string, string> = {
 }
 
 export function AdminDashboardPage() {
-  const { orders, products, customers, messages } = useStore()
+  const { orders, products, customers, messages, site } = useStore()
   const groupedOrders = groupOrdersForAdmin(orders)
   const revenue = orders
     .filter((order) => order.status !== 'cancelled')
@@ -59,6 +59,7 @@ export function AdminDashboardPage() {
     { to: '/admin/orders', label: 'Manage orders', icon: ShoppingBag },
     { to: '/admin/messages', label: unread ? `Inbox (${unread})` : 'Inbox', icon: Mail },
     { to: '/admin/landing', label: 'Edit landing page', icon: Megaphone },
+    { to: '/admin/website', label: 'Edit website', icon: Globe },
   ]
 
   return (
@@ -68,7 +69,7 @@ export function AdminDashboardPage() {
         <p className="text-xs font-semibold tracking-[0.2em] text-gold/80 uppercase">{today}</p>
         <h1 className="font-display mt-2 text-3xl text-gold sm:text-4xl">Welcome back</h1>
         <p className="mt-2 max-w-xl text-sm text-cream/75 sm:text-base">
-          {SITE.name} admin — orders, products and the offer page in one place.
+          {site.name} admin — orders, products and the offer page in one place.
         </p>
         <div className="mt-5 flex flex-wrap gap-3">
           <Link

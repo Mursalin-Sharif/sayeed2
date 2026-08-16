@@ -1,5 +1,5 @@
 import type { Customer, Order, StoreSnapshot } from './types'
-import { createSeedSnapshot, normalizeLanding } from './seed'
+import { createSeedSnapshot, normalizeLanding, normalizeSite } from './seed'
 
 const KEY = 'js-agro-shop-store-v5'
 
@@ -48,6 +48,7 @@ export function loadSnapshot(): StoreSnapshot {
       slides: parsed.slides?.length ? parsed.slides : seed.slides,
       media: parsed.media?.length ? parsed.media : seed.media,
       landing: normalizeLanding(parsed.landing),
+      site: normalizeSite(parsed.site),
       customers: [],
       messages: parsed.messages ?? seed.messages,
     }
@@ -70,6 +71,7 @@ export function saveSnapshot(snapshot: StoreSnapshot) {
   const next = {
     ...snapshot,
     landing: normalizeLanding(snapshot.landing),
+    site: normalizeSite(snapshot.site),
     messages: snapshot.messages ?? [],
     customers: customersFromOrders(snapshot.orders),
   }

@@ -1,6 +1,7 @@
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import {
+  Globe,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -17,7 +18,6 @@ import { ConfirmProvider } from '@/components/admin/ConfirmDialog'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { useAuth } from '@/context/AuthContext'
 import { useStore } from '@/context/StoreContext'
-import { SITE } from '@/lib/seed'
 import { cn } from '@/lib/utils'
 
 const links = [
@@ -27,6 +27,7 @@ const links = [
   { to: '/admin/customers', label: 'Customers', icon: Users },
   { to: '/admin/messages', label: 'Messages', icon: Mail },
   { to: '/admin/landing', label: 'Landing page', icon: Megaphone },
+  { to: '/admin/website', label: 'Website', icon: Globe },
   { to: '/admin/carousel', label: 'Carousel', icon: PanelsTopLeft },
   { to: '/admin/account', label: 'Admin account', icon: UserCog },
 ]
@@ -64,7 +65,7 @@ function AdminShell({
   open: boolean
   setOpen: (value: boolean | ((prev: boolean) => boolean)) => void
 }) {
-  const { syncError, messages, orders } = useStore()
+  const { syncError, messages, orders, site } = useStore()
   const unread = (messages ?? []).filter((item) => !item.read).length
   const pendingOrders = orders.filter((order) => order.status === 'pending').length
 
@@ -76,7 +77,7 @@ function AdminShell({
           <div className="mb-8 flex items-center gap-3">
             <LogoMark className="size-12" />
             <div>
-              <p className="font-display text-xl leading-none text-gold">{SITE.name}</p>
+              <p className="font-display text-xl leading-none text-gold">{site.name}</p>
               <p className="mt-1 text-[11px] tracking-[0.18em] text-zinc-500 uppercase">Admin panel</p>
             </div>
           </div>

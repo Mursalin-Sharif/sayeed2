@@ -1,15 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronLeft, ChevronRight, Leaf, PhoneCall, ShieldCheck, Truck, type LucideIcon } from 'lucide-react'
-import { SITE } from '@/lib/seed'
+import { useStore } from '@/context/StoreContext'
 
-const FEATURES: { icon: LucideIcon; title: string; text: string }[] = [
-  { icon: Truck, title: 'কুরিয়ার ও বাস ডেলিভারি', text: 'সারা বাংলাদেশে পৌঁছে যায়' },
-  { icon: ShieldCheck, title: 'জাতের গ্যারান্টি', text: 'প্রতিটি চারায় শতভাগ নিশ্চয়তা' },
-  { icon: Leaf, title: 'দেশি-বিদেশি চারা', text: 'ফল ও সবজির চারা একসাথে' },
-  { icon: PhoneCall, title: 'WhatsApp / Imo', text: `${SITE.phone2} · ${SITE.phone}` },
-]
+function useFeatures() {
+  const { site } = useStore()
+  return [
+    { icon: Truck, title: 'কুরিয়ার ও বাস ডেলিভারি', text: 'সারা বাংলাদেশে পৌঁছে যায়' },
+    { icon: ShieldCheck, title: 'জাতের গ্যারান্টি', text: 'প্রতিটি চারায় শতভাগ নিশ্চয়তা' },
+    { icon: Leaf, title: 'দেশি-বিদেশি চারা', text: 'ফল ও সবজির চারা একসাথে' },
+    { icon: PhoneCall, title: 'WhatsApp / Imo', text: `${site.phone2} · ${site.phone}` },
+  ]
+}
 
-function FeatureCard({ icon: Icon, title, text }: (typeof FEATURES)[number]) {
+type FeatureItem = { icon: LucideIcon; title: string; text: string }
+
+function FeatureCard({ icon: Icon, title, text }: FeatureItem) {
   return (
     <div className="flex h-full flex-col items-center rounded-3xl bg-white p-5 text-center shadow-sm">
       <Icon className="mb-3 text-leaf-mid" />
@@ -20,6 +25,7 @@ function FeatureCard({ icon: Icon, title, text }: (typeof FEATURES)[number]) {
 }
 
 export function FeatureCarousel() {
+  const features = useFeatures()
   const scrollerRef = useRef<HTMLDivElement>(null)
   const pauseRef = useRef(false)
   const [index, setIndex] = useState(0)
@@ -56,11 +62,11 @@ export function FeatureCarousel() {
   useEffect(() => {
     const timer = window.setInterval(() => {
       if (pauseRef.current) return
-      const next = (index + 1) % FEATURES.length
+      const next = (index + 1) % features.length
       goTo(next)
     }, 4000)
     return () => window.clearInterval(timer)
-  }, [index])
+  }, [index, features.length])
 
   return (
     <section className="mx-auto max-w-6xl px-4 py-10">
@@ -72,7 +78,7 @@ export function FeatureCarousel() {
             pauseRef.current = true
           }}
         >
-          {FEATURES.map((item) => (
+          {features.map((item) => (
             <article
               key={item.title}
               className="w-[82%] shrink-0 snap-start sm:w-[48%] md:w-[46%]"
@@ -87,7 +93,7 @@ export function FeatureCarousel() {
           className="absolute left-0 top-1/2 z-10 inline-flex size-8 -translate-x-1 -translate-y-1/2 items-center justify-center rounded-full bg-leaf text-white shadow sm:size-9"
           onClick={() => {
             pauseRef.current = true
-            goTo((index - 1 + FEATURES.length) % FEATURES.length)
+            goTo((index - 1 + features.length) % features.length)
           }}
           aria-label="আগের তথ্য"
         >
@@ -98,7 +104,7 @@ export function FeatureCarousel() {
           className="absolute right-0 top-1/2 z-10 inline-flex size-8 translate-x-1 -translate-y-1/2 items-center justify-center rounded-full bg-leaf text-white shadow sm:size-9"
           onClick={() => {
             pauseRef.current = true
-            goTo((index + 1) % FEATURES.length)
+            goTo((index + 1) % features.length)
           }}
           aria-label="পরের তথ্য"
         >
@@ -106,7 +112,7 @@ export function FeatureCarousel() {
         </button>
 
         <div className="mt-4 flex justify-center gap-1.5">
-          {FEATURES.map((item, i) => (
+          {features.map((item, i) => (
             <button
               key={item.title}
               type="button"
@@ -122,7 +128,7 @@ export function FeatureCarousel() {
       </div>
 
       <div className="hidden gap-4 lg:grid lg:grid-cols-4">
-        {FEATURES.map((item) => (
+        {features.map((item) => (
           <FeatureCard key={item.title} {...item} />
         ))}
       </div>

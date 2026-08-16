@@ -5,6 +5,7 @@ import type {
   LandingMedia,
   Order,
   Product,
+  SiteContent,
   StoreSnapshot,
 } from './types'
 
@@ -25,6 +26,51 @@ export const SITE = {
   facebook: 'https://www.facebook.com/share/1CnLBxJqHr/',
   logo: '/js-agro-shop-logo.png',
   followers: '২০ হাজার ফলোয়ার',
+}
+
+export const seedSite: SiteContent = {
+  name: SITE.name,
+  nameEn: SITE.nameEn,
+  slogan: SITE.slogan,
+  tagline: SITE.tagline,
+  about:
+    'সকল প্রকার দেশি-বিদেশি ফল ও সবজির চারা। সারা বাংলাদেশে কুরিয়ার ও বাস সার্ভিসে ডেলিভারি। প্রতিটি চারায় শতভাগ জাতের গ্যারান্টি।',
+  phone: SITE.phone,
+  phone2: SITE.phone2,
+  email: SITE.email,
+  address: SITE.address,
+  hours: SITE.hours,
+  facebook: SITE.facebook,
+  homeBannerTitle: 'হাইব্রিড পেঁপে চারা · শতভাগ জাতের গ্যারান্টি',
+  homeBannerCta: 'অফার পেজ দেখুন',
+  headerOfferLabel: 'অফার',
+}
+
+export function normalizeSite(raw?: Partial<SiteContent> | null): SiteContent {
+  const src = raw ?? {}
+  return {
+    name: src.name?.trim() || seedSite.name,
+    nameEn: src.nameEn?.trim() || seedSite.nameEn,
+    slogan: src.slogan?.trim() || seedSite.slogan,
+    tagline: src.tagline?.trim() || seedSite.tagline,
+    about: src.about?.trim() || seedSite.about,
+    phone: src.phone?.trim() || seedSite.phone,
+    phone2: src.phone2?.trim() || seedSite.phone2,
+    email: src.email?.trim() || seedSite.email,
+    address: src.address?.trim() || seedSite.address,
+    hours: src.hours?.trim() || seedSite.hours,
+    facebook: src.facebook?.trim() || seedSite.facebook,
+    homeBannerTitle: src.homeBannerTitle?.trim() || seedSite.homeBannerTitle,
+    homeBannerCta: src.homeBannerCta?.trim() || seedSite.homeBannerCta,
+    headerOfferLabel: src.headerOfferLabel?.trim() || seedSite.headerOfferLabel,
+  }
+}
+
+export function siteWhatsapp(site: SiteContent) {
+  const digits = site.phone2.replace(/\D/g, '')
+  if (digits.startsWith('880')) return digits
+  if (digits.startsWith('0')) return `88${digits}`
+  return SITE.whatsapp
 }
 
 export const seedProducts: Product[] = [
@@ -350,7 +396,12 @@ export const seedLanding: LandingContent = {
   offerTitle: 'মিয়াজাকি আম (সূর্য ডিম)',
   offerPrice: 850,
   offerComparePrice: null,
+  offerMediaIds: [],
   metaPixelId: '',
+  ctaLabel: 'অর্ডার করুন',
+  checkoutTitle: 'অর্ডার করুন',
+  helpTitle: 'ওয়েবসাইটে অর্ডার করতে সমস্যা হলে বা অর্ডার করতে না পারলে',
+  helpSubtitle: 'প্রয়োজনে কল করুন-',
 }
 
 function asLines(value: unknown, fallback: string[]): string[] {
@@ -395,7 +446,14 @@ export function normalizeLanding(raw?: Partial<LandingContent> | null): LandingC
       src.offerComparePrice == null || !Number.isFinite(Number(src.offerComparePrice))
         ? null
         : Number(src.offerComparePrice),
+    offerMediaIds: Array.isArray(src.offerMediaIds)
+      ? src.offerMediaIds.map((id) => String(id).trim()).filter(Boolean)
+      : [],
     metaPixelId: src.metaPixelId?.trim() || '',
+    ctaLabel: src.ctaLabel?.trim() || base.ctaLabel,
+    checkoutTitle: src.checkoutTitle?.trim() || base.checkoutTitle,
+    helpTitle: src.helpTitle?.trim() || base.helpTitle,
+    helpSubtitle: src.helpSubtitle?.trim() || base.helpSubtitle,
   }
 }
 
@@ -491,6 +549,7 @@ export function createSeedSnapshot(): StoreSnapshot {
     slides: seedSlides,
     media: seedMedia,
     landing: seedLanding,
+    site: seedSite,
     customers: [],
     messages: seedMessages,
   }
