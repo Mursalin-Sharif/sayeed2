@@ -153,17 +153,19 @@ export function LandingPage() {
         </p>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 py-12">
-        <h2 className="mb-6 text-3xl font-bold text-leaf">অর্ডার করুন</h2>
-        {offer ? (
-          <CheckoutForm
-            alignCenter
-            catalog={products}
-            products={[{ product: offer, quantity: 1 }]}
-          />
-        ) : (
-          <p>অফার পণ্য পাওয়া যায়নি। হোম পেজ থেকে পণ্য বেছে নিন।</p>
-        )}
+      <section className="bg-cream px-4 py-12">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="mb-6 text-3xl font-bold text-leaf">অর্ডার করুন</h2>
+          {offer ? (
+            <CheckoutForm
+              alignCenter
+              catalog={products}
+              products={[{ product: offer, quantity: 1 }]}
+            />
+          ) : (
+            <p>অফার পণ্য পাওয়া যায়নি। হোম পেজ থেকে পণ্য বেছে নিন।</p>
+          )}
+        </div>
       </section>
     </div>
   )
