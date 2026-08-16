@@ -17,7 +17,7 @@ export function OrderSuccessPage() {
       <CheckCircle2 className="mx-auto size-16 text-leaf-mid" />
       <h1 className="font-display mt-4 text-4xl text-leaf">অর্ডার সম্পন্ন হয়েছে!</h1>
       <p className="mt-3 text-ink/70">
-        ধন্যবাদ। আমাদের প্রতিনিধি শীঘ্রই ফোন করে অর্ডার কনফার্ম করবেন।
+        ধন্যবাদ অর্ডার করার জন্য, কিছুক্ষণের মধ্যে আমাদের প্রতিনিধি আপনার সাথে যোগাযোগ করবে।
       </p>
       {order && (
         <div className="mt-6 rounded-3xl bg-white p-6 text-left shadow-sm">

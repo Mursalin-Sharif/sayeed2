@@ -131,7 +131,9 @@ export function ProductPage() {
       </div>
 
       <div className="mt-14">
-        <h2 className="mb-6 font-display text-3xl text-leaf">অর্ডার সম্পূর্ণ করুন</h2>
+        <h2 className="mb-6 font-display text-2xl leading-snug text-leaf sm:text-3xl">
+          আপনার নাম, ঠিকানা ও মোবাইল নম্বর দিয়ে অর্ডারটি সম্পন্ন করুন
+        </h2>
         <CheckoutForm products={[{ product, quantity: qty }]} />
       </div>
     </div>
