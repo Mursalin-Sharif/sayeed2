@@ -309,9 +309,9 @@ export function LandingPage() {
 
       <section className="bg-cream px-4 py-12">
         <div className="mx-auto max-w-6xl">
-          {content.checkoutTitle ? (
-            <h2 className="mb-6 text-3xl font-bold text-leaf">{content.checkoutTitle}</h2>
-          ) : null}
+          <p className="mx-auto mb-6 max-w-xl text-base leading-relaxed text-leaf-deep/80">
+            আপনার নাম, ঠিকানা ও মোবাইল নম্বর দিয়ে অর্ডারটি সম্পন্ন করুন
+          </p>
           <CheckoutForm
             alignCenter
             productTitle={landingProduct.name}
