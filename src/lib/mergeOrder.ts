@@ -95,31 +95,6 @@ export function groupOrdersForAdmin(orders: Order[]): OrderRow[] {
   return rows.sort((a, b) => b.order.createdAt.localeCompare(a.order.createdAt))
 }
 
-export const DUPLICATE_PRODUCT_UNIT_MESSAGE =
-  'You already ordered this product. Please choose a different product or number of units.'
-
-export class DuplicateProductUnitError extends Error {
-  constructor() {
-    super(DUPLICATE_PRODUCT_UNIT_MESSAGE)
-    this.name = 'DuplicateProductUnitError'
-  }
-}
-
-export function hasSameProductUnitOrder(orders: Order[], input: CheckoutInput) {
-  const phone = normalizeBdPhone(input.phone)
-  const name = normText(input.customerName)
-  return orders.some((order) => {
-    if (order.status === 'cancelled') return false
-    if (normalizeBdPhone(order.phone) !== phone) return false
-    if (normText(order.customerName) !== name) return false
-    return input.items.some((incoming) =>
-      order.items.some(
-        (existing) => existing.productId === incoming.productId && existing.quantity === incoming.quantity,
-      ),
-    )
-  })
-}
-
 export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
   const phone = normalizeBdPhone(input.phone)
   const name = input.customerName.trim()

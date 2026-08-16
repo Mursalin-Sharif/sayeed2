@@ -2,8 +2,9 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { Copy, Check } from 'lucide-react'
 import { useConfirm } from '@/components/admin/ConfirmDialog'
 import { AdminUploadField } from '@/components/admin/AdminUploadField'
+import { ShopSettingsFields } from '@/components/admin/ShopSettingsFields'
 import { useStore } from '@/context/StoreContext'
-import { normalizeLanding } from '@/lib/seed'
+import { normalizeLanding, normalizeSite } from '@/lib/seed'
 import type { LandingMedia } from '@/lib/types'
 import { cn, uid } from '@/lib/utils'
 
@@ -40,9 +41,10 @@ const emptyMedia = {
 }
 
 export function AdminLandingPage() {
-  const { landing, saveLanding, products, media, saveMedia, deleteMedia } = useStore()
+  const { landing, saveLanding, saveSite, site, products, media, saveMedia, deleteMedia } = useStore()
   const confirm = useConfirm()
   const [form, setForm] = useState(() => normalizeLanding(landing))
+  const [siteForm, setSiteForm] = useState(() => normalizeSite(site))
   const [upload, setUpload] = useState(emptyMedia)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [savingFile, setSavingFile] = useState(false)
@@ -55,6 +57,10 @@ export function AdminLandingPage() {
   useEffect(() => {
     setForm(normalizeLanding(landing))
   }, [landing])
+
+  useEffect(() => {
+    setSiteForm(normalizeSite(site))
+  }, [site])
 
   useEffect(() => {
     setLandingUrl(adsUrl())
@@ -100,7 +106,8 @@ export function AdminLandingPage() {
     setNotice('')
     try {
       await saveLanding(normalizeLanding(form))
-      setNotice('Landing page saved. Home product price was not changed.')
+      await saveSite(normalizeSite(siteForm))
+      setNotice('Saved. Open the landing page to see every change.')
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Save failed')
     } finally {
@@ -136,8 +143,16 @@ export function AdminLandingPage() {
       <div>
         <h1 className="font-display text-3xl text-gold">Landing page</h1>
         <p className="mt-1 text-sm text-zinc-400">
-          Upload photos at the top. Everything on /offer — title, price, text, buttons and media — is saved here.
+          Every heading, photo, price, button and checkout text on /offer is edited here. Leave a field empty to hide it.
         </p>
+        <a
+          href="/offer"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-2 inline-block text-sm font-semibold text-gold hover:underline"
+        >
+          Open landing page →
+        </a>
         {notice ? (
           <p className={`mt-2 text-sm font-semibold ${notice.toLowerCase().includes('fail') ? 'text-red-400' : 'text-emerald-400'}`}>
             {notice}
@@ -200,7 +215,7 @@ export function AdminLandingPage() {
 
       <form onSubmit={onSaveLanding} className="space-y-4">
         <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-sm font-semibold text-zinc-200">Landing product — separate from Home</p>
+          <p className="text-sm font-semibold text-zinc-200">Landing product — title, price, photos</p>
           <p className="text-xs text-zinc-500">
             Tick the files saved above, then set price and compare price. Home products stay unchanged.
           </p>
@@ -349,10 +364,10 @@ export function AdminLandingPage() {
         </section>
 
         <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <p className="text-sm font-semibold text-zinc-200">Landing page text</p>
-          <p className="text-xs text-zinc-500">These fields control every heading and paragraph on /offer.</p>
+          <p className="text-sm font-semibold text-zinc-200">1. Hero — top green block</p>
+          <p className="text-xs text-zinc-500">Product title is the big heading. Hero title is the small gold line above it if they differ.</p>
           <label className="block text-sm text-zinc-400">
-            Hero title
+            Hero title (small gold line)
             <input
               value={form.heroTitle}
               onChange={(e) => setForm({ ...form, heroTitle: e.target.value })}
@@ -374,9 +389,14 @@ export function AdminLandingPage() {
               onChange={(e) => setForm({ ...form, ctaLabel: e.target.value })}
               className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
             />
+            <span className="mt-1 block text-xs text-zinc-500">Used on hero buttons and on each photo. Empty hides those buttons.</span>
           </label>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm font-semibold text-zinc-200">2. Package list</p>
           <label className="block text-sm text-zinc-400">
-            Package title
+            Package title (white box)
             <input
               value={form.packageTitle}
               onChange={(e) => setForm({ ...form, packageTitle: e.target.value })}
@@ -394,6 +414,10 @@ export function AdminLandingPage() {
               Number a line yourself with 1. 2. 3. Lines without a number show as headings. Use Title: details to split heading and description.
             </span>
           </label>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm font-semibold text-zinc-200">3. Story + photos</p>
           <label className="block text-sm text-zinc-400">
             Story title
             <input
@@ -410,6 +434,10 @@ export function AdminLandingPage() {
               className="mt-1 min-h-28 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
             />
           </label>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm font-semibold text-zinc-200">4. Why us</p>
           <label className="block text-sm text-zinc-400">
             Why title
             <input
@@ -426,6 +454,10 @@ export function AdminLandingPage() {
               className="mt-1 min-h-28 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
             />
           </label>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm font-semibold text-zinc-200">5. Gold help / phone block</p>
           <label className="block text-sm text-zinc-400">
             Help title
             <input
@@ -443,6 +475,14 @@ export function AdminLandingPage() {
             />
           </label>
           <label className="block text-sm text-zinc-400">
+            Payment / WhatsApp title
+            <input
+              value={form.paymentTitle}
+              onChange={(e) => setForm({ ...form, paymentTitle: e.target.value })}
+              className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+            />
+          </label>
+          <label className="block text-sm text-zinc-400">
             Help / order phones
             <input
               value={form.paymentNumber}
@@ -451,11 +491,55 @@ export function AdminLandingPage() {
             />
           </label>
           <label className="block text-sm text-zinc-400">
+            Payment note
+            <textarea
+              value={form.paymentNote}
+              onChange={(e) => setForm({ ...form, paymentNote: e.target.value })}
+              className="mt-1 min-h-20 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+            />
+          </label>
+        </section>
+
+        <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+          <p className="text-sm font-semibold text-zinc-200">6. Checkout form</p>
+          <label className="block text-sm text-zinc-400">
             Checkout title
             <input
               value={form.checkoutTitle}
               onChange={(e) => setForm({ ...form, checkoutTitle: e.target.value })}
               className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+            />
+          </label>
+          <label className="block text-sm text-zinc-400">
+            Billing box title
+            <input
+              value={form.checkoutBillingTitle}
+              onChange={(e) => setForm({ ...form, checkoutBillingTitle: e.target.value })}
+              className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+            />
+          </label>
+          <label className="block text-sm text-zinc-400">
+            Order box title
+            <input
+              value={form.checkoutOrderTitle}
+              onChange={(e) => setForm({ ...form, checkoutOrderTitle: e.target.value })}
+              className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+            />
+          </label>
+          <label className="block text-sm text-zinc-400">
+            Place order button
+            <input
+              value={form.checkoutSubmitLabel}
+              onChange={(e) => setForm({ ...form, checkoutSubmitLabel: e.target.value })}
+              className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+            />
+          </label>
+          <label className="block text-sm text-zinc-400">
+            Cash on delivery note
+            <textarea
+              value={form.checkoutCodNote}
+              onChange={(e) => setForm({ ...form, checkoutCodNote: e.target.value })}
+              className="mt-1 min-h-20 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
             />
           </label>
         </section>
@@ -488,8 +572,10 @@ export function AdminLandingPage() {
           </label>
         </section>
 
+        <ShopSettingsFields form={siteForm} onChange={setSiteForm} />
+
         <button type="submit" disabled={saving} className="rounded-xl bg-gold px-6 py-3 font-bold text-leaf-deep disabled:opacity-60">
-          {saving ? 'Saving...' : 'Save landing'}
+          {saving ? 'Saving...' : 'Save'}
         </button>
       </form>
     </div>

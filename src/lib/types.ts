@@ -106,6 +106,10 @@ export type LandingContent = {
   checkoutTitle: string
   helpTitle: string
   helpSubtitle: string
+  checkoutBillingTitle: string
+  checkoutOrderTitle: string
+  checkoutSubmitLabel: string
+  checkoutCodNote: string
 }
 
 export type SiteContent = {

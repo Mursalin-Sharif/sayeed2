@@ -110,6 +110,10 @@ function asLanding(row: Record<string, unknown>): LandingContent {
     checkoutTitle: String(row.checkout_title ?? ''),
     helpTitle: String(row.help_title ?? ''),
     helpSubtitle: String(row.help_subtitle ?? ''),
+    checkoutBillingTitle: String(row.checkout_billing_title ?? ''),
+    checkoutOrderTitle: String(row.checkout_order_title ?? ''),
+    checkoutSubmitLabel: String(row.checkout_submit_label ?? ''),
+    checkoutCodNote: String(row.checkout_cod_note ?? ''),
   })
 }
 
@@ -225,9 +229,8 @@ export async function cloudDeleteProduct(id: string) {
   fail(error)
 }
 
-export async function cloudInsertOrder(order: Order) {
-  if (!supabase) return
-  const { error } = await supabase.from('orders').insert({
+function orderRow(order: Order) {
+  return {
     id: order.id,
     items: order.items,
     customer_name: order.customerName,
@@ -243,27 +246,26 @@ export async function cloudInsertOrder(order: Order) {
     source: order.source ?? '',
     campaign: order.campaign ?? '',
     created_at: order.createdAt,
-  })
+  }
+}
+
+export async function cloudSaveOrder(order: Order) {
+  if (!supabase) return
+  const payload = orderRow(order)
+  const { error } = await supabase.from('orders').upsert(payload)
   if (error && /source|campaign|column/i.test(error.message)) {
-    const retry = await supabase.from('orders').insert({
-      id: order.id,
-      items: order.items,
-      customer_name: order.customerName,
-      phone: order.phone,
-      address: order.address,
-      district: order.district,
-      shipping_type: order.shippingType,
-      shipping_fee: order.shippingFee,
-      subtotal: order.subtotal,
-      total: order.total,
-      status: order.status,
-      notes: order.notes,
-      created_at: order.createdAt,
-    })
+    const rest = { ...payload } as Record<string, unknown>
+    delete rest.source
+    delete rest.campaign
+    const retry = await supabase.from('orders').upsert(rest)
     fail(retry.error)
     return
   }
   fail(error)
+}
+
+export async function cloudInsertOrder(order: Order) {
+  await cloudSaveOrder(order)
 }
 
 export async function cloudUpdateOrder(order: Order) {
@@ -387,6 +389,10 @@ export async function cloudSaveLanding(landing: LandingContent) {
     checkout_title: landing.checkoutTitle ?? '',
     help_title: landing.helpTitle ?? '',
     help_subtitle: landing.helpSubtitle ?? '',
+    checkout_billing_title: landing.checkoutBillingTitle ?? '',
+    checkout_order_title: landing.checkoutOrderTitle ?? '',
+    checkout_submit_label: landing.checkoutSubmitLabel ?? '',
+    checkout_cod_note: landing.checkoutCodNote ?? '',
   }
   const { error } = await supabase.from('landing_content').upsert(payload)
   if (error && /column/i.test(error.message)) {
@@ -403,6 +409,12 @@ export async function cloudSaveLanding(landing: LandingContent) {
       delete rest.checkout_title
       delete rest.help_title
       delete rest.help_subtitle
+    }
+    if (/checkout_billing_title|checkout_order_title|checkout_submit_label|checkout_cod_note/i.test(error.message)) {
+      delete rest.checkout_billing_title
+      delete rest.checkout_order_title
+      delete rest.checkout_submit_label
+      delete rest.checkout_cod_note
     }
     const retry = await supabase.from('landing_content').upsert(rest)
     fail(retry.error)

@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import {
   ArrowUpRight,
   Banknote,
-  Globe,
   Mail,
   Megaphone,
   Package,
@@ -12,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useStore } from '@/context/StoreContext'
 import { groupOrdersForAdmin } from '@/lib/mergeOrder'
+import { normalizeSite } from '@/lib/seed'
 import { cn, formatDate, formatTaka } from '@/lib/utils'
 
 const statusLabel: Record<string, string> = {
@@ -33,7 +33,8 @@ const statusClass: Record<string, string> = {
 }
 
 export function AdminDashboardPage() {
-  const { orders, products, customers, messages, site } = useStore()
+  const { orders, products, customers, messages, site: rawSite } = useStore()
+  const site = normalizeSite(rawSite)
   const groupedOrders = groupOrdersForAdmin(orders)
   const revenue = orders
     .filter((order) => order.status !== 'cancelled')
@@ -59,7 +60,6 @@ export function AdminDashboardPage() {
     { to: '/admin/orders', label: 'Manage orders', icon: ShoppingBag },
     { to: '/admin/messages', label: unread ? `Inbox (${unread})` : 'Inbox', icon: Mail },
     { to: '/admin/landing', label: 'Edit landing page', icon: Megaphone },
-    { to: '/admin/website', label: 'Edit website', icon: Globe },
   ]
 
   return (

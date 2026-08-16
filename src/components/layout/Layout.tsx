@@ -5,7 +5,7 @@ import { LogoMark } from '@/components/brand/LogoMark'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { useCart } from '@/context/CartContext'
 import { useStore } from '@/context/StoreContext'
-import { siteWhatsapp } from '@/lib/seed'
+import { normalizeSite, siteWhatsapp } from '@/lib/seed'
 import { cn } from '@/lib/utils'
 
 const links = [
@@ -16,11 +16,12 @@ const links = [
 
 export function Layout({ children }: { children: ReactNode }) {
   const { count } = useCart()
-  const { site } = useStore()
+  const { site: rawSite } = useStore()
+  const site = normalizeSite(rawSite)
   const [open, setOpen] = useState(false)
 
   return (
-    <div className="min-h-svh bg-cream pb-[calc(55px+env(safe-area-inset-bottom,0px))] text-ink lg:pb-0">
+    <div className="min-h-svh bg-cream pb-[calc(80px+env(safe-area-inset-bottom,0px))] text-ink lg:pb-0">
       <header className="border-b border-leaf/10 bg-white/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4">
           <Link to="/" className="flex min-w-0 items-center gap-2.5 sm:gap-3">

@@ -402,12 +402,15 @@ export const seedLanding: LandingContent = {
   checkoutTitle: 'অর্ডার করুন',
   helpTitle: 'ওয়েবসাইটে অর্ডার করতে সমস্যা হলে বা অর্ডার করতে না পারলে',
   helpSubtitle: 'প্রয়োজনে কল করুন-',
+  checkoutBillingTitle: 'Billing details',
+  checkoutOrderTitle: 'Your order',
+  checkoutSubmitLabel: 'Place Order',
+  checkoutCodNote: 'Cash on delivery — পণ্য হাতে পেয়ে টাকা দিবেন।',
 }
 
 function asLines(value: unknown, fallback: string[]): string[] {
   if (Array.isArray(value)) {
-    const lines = value.map((item) => String(item).trim()).filter(Boolean)
-    return lines.length ? lines : fallback
+    return value.map((item) => String(item).trim()).filter(Boolean)
   }
   if (typeof value === 'string' && value.trim()) {
     try {
@@ -418,29 +421,36 @@ function asLines(value: unknown, fallback: string[]): string[] {
       if (lines.length) return lines
     }
   }
-  return fallback
+  if (value == null) return fallback
+  return []
+}
+
+function pickText(value: string | undefined | null, fallback: string, allowEmpty = false) {
+  if (value == null) return fallback
+  const trimmed = value.trim()
+  return allowEmpty ? trimmed : trimmed || fallback
 }
 
 export function normalizeLanding(raw?: Partial<LandingContent> | null): LandingContent {
   const base = seedLanding
   const src = raw ?? {}
   return {
-    heroTitle: src.heroTitle?.trim() || base.heroTitle,
-    heroSubtitle: src.heroSubtitle?.trim() || base.heroSubtitle,
-    packageTitle: src.packageTitle?.trim() || base.packageTitle,
-    packageItems: asLines(src.packageItems, base.packageItems),
-    storyTitle: src.storyTitle?.trim() || base.storyTitle,
-    storyBody: src.storyBody?.trim() || base.storyBody,
-    whyTitle: src.whyTitle?.trim() || base.whyTitle,
-    whyItems: asLines(src.whyItems, base.whyItems),
-    paymentTitle: src.paymentTitle?.trim() || base.paymentTitle,
-    paymentNumber: src.paymentNumber?.trim() || base.paymentNumber,
-    paymentNote: src.paymentNote?.trim() || base.paymentNote,
+    heroTitle: pickText(src.heroTitle, base.heroTitle, true),
+    heroSubtitle: pickText(src.heroSubtitle, base.heroSubtitle, true),
+    packageTitle: pickText(src.packageTitle, base.packageTitle, true),
+    packageItems: src.packageItems == null ? base.packageItems : asLines(src.packageItems, []),
+    storyTitle: pickText(src.storyTitle, base.storyTitle, true),
+    storyBody: pickText(src.storyBody, base.storyBody, true),
+    whyTitle: pickText(src.whyTitle, base.whyTitle, true),
+    whyItems: src.whyItems == null ? base.whyItems : asLines(src.whyItems, []),
+    paymentTitle: pickText(src.paymentTitle, base.paymentTitle, true),
+    paymentNumber: pickText(src.paymentNumber, base.paymentNumber, true),
+    paymentNote: pickText(src.paymentNote, base.paymentNote, true),
     offerProductId:
       !src.offerProductId?.trim() || src.offerProductId === 'prod_papaya'
         ? 'prod_offer_pack'
         : src.offerProductId.trim(),
-    offerTitle: src.offerTitle?.trim() || '',
+    offerTitle: pickText(src.offerTitle, base.offerTitle, true),
     offerPrice: Number.isFinite(Number(src.offerPrice)) && Number(src.offerPrice) >= 0 ? Number(src.offerPrice) : 0,
     offerComparePrice:
       src.offerComparePrice == null || !Number.isFinite(Number(src.offerComparePrice))
@@ -450,10 +460,14 @@ export function normalizeLanding(raw?: Partial<LandingContent> | null): LandingC
       ? src.offerMediaIds.map((id) => String(id).trim()).filter(Boolean)
       : [],
     metaPixelId: src.metaPixelId?.trim() || '',
-    ctaLabel: src.ctaLabel?.trim() || base.ctaLabel,
-    checkoutTitle: src.checkoutTitle?.trim() || base.checkoutTitle,
-    helpTitle: src.helpTitle?.trim() || base.helpTitle,
-    helpSubtitle: src.helpSubtitle?.trim() || base.helpSubtitle,
+    ctaLabel: pickText(src.ctaLabel, base.ctaLabel, true),
+    checkoutTitle: pickText(src.checkoutTitle, base.checkoutTitle, true),
+    helpTitle: pickText(src.helpTitle, base.helpTitle, true),
+    helpSubtitle: pickText(src.helpSubtitle, base.helpSubtitle, true),
+    checkoutBillingTitle: pickText(src.checkoutBillingTitle, base.checkoutBillingTitle),
+    checkoutOrderTitle: pickText(src.checkoutOrderTitle, base.checkoutOrderTitle),
+    checkoutSubmitLabel: pickText(src.checkoutSubmitLabel, base.checkoutSubmitLabel),
+    checkoutCodNote: pickText(src.checkoutCodNote, base.checkoutCodNote, true),
   }
 }
 

@@ -3,6 +3,7 @@ import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackViewContent } from '@/lib/metaPixel'
 import { normalizeLanding } from '@/lib/seed'
+import type { Product } from '@/lib/types'
 import { formatTaka } from '@/lib/utils'
 import { useEffect, useMemo, type MouseEvent } from 'react'
 import { useLocation } from 'react-router-dom'
@@ -83,26 +84,41 @@ export function LandingPage() {
     gallery.find((item) => item.type === 'image')?.url ||
     gallery[0]?.url ||
     ''
-  const landingProduct = useMemo(
-    () =>
-      offer
-        ? {
-            ...offer,
-            name: content.offerTitle.trim() || offer.name,
-            price: content.offerPrice > 0 ? content.offerPrice : offer.price,
-            comparePrice:
-              content.offerComparePrice && content.offerComparePrice > 0
-                ? content.offerComparePrice
-                : offer.comparePrice,
-            image: coverImage || offer.image,
-            gallery: [
-              ...gallery.filter((item) => item.type === 'image').map((item) => item.url),
-              ...offer.gallery.filter((url) => url && url !== coverImage),
-            ],
-          }
-        : undefined,
-    [content.offerComparePrice, content.offerPrice, content.offerTitle, coverImage, gallery, offer],
-  )
+  const landingProduct = useMemo<Product>(() => {
+    const name = content.offerTitle.trim() || offer?.name || content.heroTitle || 'অফার পণ্য'
+    const price = content.offerPrice > 0 ? content.offerPrice : offer?.price ?? 0
+    const comparePrice =
+      content.offerComparePrice && content.offerComparePrice > 0
+        ? content.offerComparePrice
+        : offer?.comparePrice ?? null
+    const image = coverImage || offer?.image || ''
+    return {
+      id: offer?.id || content.offerProductId || 'prod_landing_offer',
+      name,
+      headline: offer?.headline ?? '',
+      description: offer?.description ?? '',
+      price,
+      comparePrice,
+      image,
+      gallery: [
+        ...gallery.filter((item) => item.type === 'image').map((item) => item.url),
+        ...(offer?.gallery ?? []).filter((url) => url && url !== image),
+      ],
+      category: offer?.category ?? 'offer',
+      stock: offer?.stock ?? 99,
+      featured: true,
+      createdAt: offer?.createdAt ?? new Date().toISOString(),
+    }
+  }, [
+    content.heroTitle,
+    content.offerComparePrice,
+    content.offerPrice,
+    content.offerProductId,
+    content.offerTitle,
+    coverImage,
+    gallery,
+    offer,
+  ])
 
   useEffect(() => {
     if (!landingProduct) return
@@ -114,17 +130,34 @@ export function LandingPage() {
     })
   }, [landingProduct])
 
+  const packageLines = parsePackageItems(content.packageItems)
+  const showHeroCta = Boolean(content.ctaLabel.trim())
+  const showPackage = Boolean(content.packageTitle.trim() || packageLines.length)
+  const showStory = Boolean(content.storyTitle.trim() || content.storyBody.trim() || gallery.length)
+  const showWhy = Boolean(content.whyTitle.trim() || content.whyItems.length)
+  const phones = content.paymentNumber
+    .split(/[·,|\n]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+  const showHelp = Boolean(
+    content.paymentTitle.trim() ||
+      content.helpTitle.trim() ||
+      content.helpSubtitle.trim() ||
+      phones.length ||
+      content.paymentNote.trim(),
+  )
+
   return (
     <div className="bg-white text-center">
       <section className="bg-leaf px-4 py-14 text-white">
-        {content.heroTitle && content.heroTitle !== landingProduct?.name ? (
+        {content.heroTitle && content.heroTitle !== landingProduct.name ? (
           <p className="text-sm font-semibold text-gold">{content.heroTitle}</p>
         ) : null}
         <h1 className="mx-auto mt-3 max-w-4xl font-display text-3xl leading-snug md:text-5xl">
-          {landingProduct?.name || content.heroTitle}
+          {landingProduct.name || content.heroTitle}
         </h1>
-        <p className="mx-auto mt-4 max-w-3xl text-gold">{content.heroSubtitle}</p>
-        {landingProduct ? (
+        {content.heroSubtitle ? <p className="mx-auto mt-4 max-w-3xl text-gold">{content.heroSubtitle}</p> : null}
+        {landingProduct.price > 0 ? (
           <div className="mt-6 flex items-end justify-center gap-3">
             <span className="text-4xl font-extrabold text-gold md:text-5xl">{formatTaka(landingProduct.price)}</span>
             {landingProduct.comparePrice && landingProduct.comparePrice > landingProduct.price ? (
@@ -132,147 +165,181 @@ export function LandingPage() {
             ) : null}
           </div>
         ) : null}
-        <a
-          href="#order-form"
-          onClick={(event) => {
-            scrollToOrder(event)
-            trackLandingCheckout(pathname, landingProduct)
-          }}
-          className="mt-8 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
-        >
-          {content.ctaLabel}
-        </a>
-        <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-4 text-leaf">
-          <h2 className="text-xl font-extrabold md:text-2xl">{content.packageTitle}</h2>
-        </div>
-        <div className="mx-auto mt-8 max-w-2xl space-y-3">
-          {parsePackageItems(content.packageItems).map((item, i) =>
-            item.kind === 'heading' ? (
-              <p
-                key={`heading-${i}`}
-                className={`text-center font-extrabold leading-snug text-gold ${i === 0 ? 'text-2xl md:text-3xl' : 'text-lg text-cream md:text-xl'}`}
-              >
-                {item.text}
-              </p>
-            ) : (
-              <div key={`item-${i}`} className="flex gap-3 rounded-2xl bg-white/10 px-4 py-3 text-left">
-                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-gold text-sm font-extrabold text-leaf-deep">
-                  {item.number}
-                </span>
-                <div>
-                  <p className="font-extrabold leading-snug text-gold">{item.title}</p>
-                  {item.body ? (
-                    <p className="mt-1 text-sm font-medium leading-relaxed text-cream/90">{item.body}</p>
-                  ) : null}
-                </div>
+        {showHeroCta ? (
+          <a
+            href="#order-form"
+            onClick={(event) => {
+              scrollToOrder(event)
+              trackLandingCheckout(pathname, landingProduct)
+            }}
+            className="mt-8 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
+          >
+            {content.ctaLabel}
+          </a>
+        ) : null}
+        {showPackage ? (
+          <>
+            {content.packageTitle ? (
+              <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-4 text-leaf">
+                <h2 className="text-xl font-extrabold md:text-2xl">{content.packageTitle}</h2>
               </div>
-            ),
-          )}
-        </div>
-        <a
-          href="#order-form"
-          onClick={(event) => {
-            scrollToOrder(event)
-            trackLandingCheckout(pathname, landingProduct)
-          }}
-          className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
-        >
-          {content.ctaLabel}
-        </a>
-      </section>
-
-      <section className="px-4 py-12">
-        <h2 className="mx-auto mb-6 max-w-4xl rounded-xl bg-leaf py-3 text-xl font-bold text-gold md:text-2xl">
-          {content.storyTitle}
-        </h2>
-        <p className="mx-auto max-w-3xl leading-relaxed">{content.storyBody}</p>
-        <div className="mx-auto mt-10 flex max-w-5xl flex-wrap justify-center gap-4">
-          {gallery.map((item) => (
-            <figure
-              key={item.id}
-              className="w-full max-w-sm overflow-hidden rounded-xl border-4 border-gold bg-leaf-deep sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.7rem)]"
-            >
-              {item.type === 'video' ? (
-                <div className="aspect-video">
-                  {youtubeId(item.url) ? (
-                    <iframe
-                      className="size-full"
-                      src={`https://www.youtube.com/embed/${youtubeId(item.url)}`}
-                      title={item.title}
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    />
+            ) : null}
+            {packageLines.length ? (
+              <div className="mx-auto mt-8 max-w-2xl space-y-3">
+                {packageLines.map((item, i) =>
+                  item.kind === 'heading' ? (
+                    <p
+                      key={`heading-${i}`}
+                      className={`text-center font-extrabold leading-snug text-gold ${i === 0 ? 'text-2xl md:text-3xl' : 'text-lg text-cream md:text-xl'}`}
+                    >
+                      {item.text}
+                    </p>
                   ) : (
-                    <video src={item.url} controls className="size-full object-cover" />
-                  )}
-                </div>
-              ) : (
-                <a
-                  href="#order-form"
-                  onClick={(event) => {
-                    scrollToOrder(event)
-                    trackLandingCheckout(pathname, landingProduct)
-                  }}
-                  className="block"
+                    <div key={`item-${i}`} className="flex gap-3 rounded-2xl bg-white/10 px-4 py-3 text-left">
+                      <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-gold text-sm font-extrabold text-leaf-deep">
+                        {item.number}
+                      </span>
+                      <div>
+                        <p className="font-extrabold leading-snug text-gold">{item.title}</p>
+                        {item.body ? (
+                          <p className="mt-1 text-sm font-medium leading-relaxed text-cream/90">{item.body}</p>
+                        ) : null}
+                      </div>
+                    </div>
+                  ),
+                )}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+        {showHeroCta ? (
+          <a
+            href="#order-form"
+            onClick={(event) => {
+              scrollToOrder(event)
+              trackLandingCheckout(pathname, landingProduct)
+            }}
+            className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
+          >
+            {content.ctaLabel}
+          </a>
+        ) : null}
+      </section>
+
+      {showStory ? (
+        <section className="px-4 py-12">
+          {content.storyTitle ? (
+            <h2 className="mx-auto mb-6 max-w-4xl rounded-xl bg-leaf py-3 text-xl font-bold text-gold md:text-2xl">
+              {content.storyTitle}
+            </h2>
+          ) : null}
+          {content.storyBody ? <p className="mx-auto max-w-3xl leading-relaxed">{content.storyBody}</p> : null}
+          {gallery.length ? (
+            <div className="mx-auto mt-10 flex max-w-5xl flex-wrap justify-center gap-4">
+              {gallery.map((item) => (
+                <figure
+                  key={item.id}
+                  className="w-full max-w-sm overflow-hidden rounded-xl border-4 border-gold bg-leaf-deep sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.7rem)]"
                 >
-                  <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
-                  <span className="block bg-gold py-3 text-lg font-extrabold text-black">
-                    {content.ctaLabel}
-                  </span>
+                  {item.type === 'video' ? (
+                    <div className="aspect-video">
+                      {youtubeId(item.url) ? (
+                        <iframe
+                          className="size-full"
+                          src={`https://www.youtube.com/embed/${youtubeId(item.url)}`}
+                          title={item.title}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      ) : (
+                        <video src={item.url} controls className="size-full object-cover" />
+                      )}
+                    </div>
+                  ) : (
+                    <a
+                      href="#order-form"
+                      onClick={(event) => {
+                        scrollToOrder(event)
+                        trackLandingCheckout(pathname, landingProduct)
+                      }}
+                      className="block"
+                    >
+                      <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
+                      {showHeroCta ? (
+                        <span className="block bg-gold py-3 text-lg font-extrabold text-black">{content.ctaLabel}</span>
+                      ) : null}
+                    </a>
+                  )}
+                  {(item.title || item.caption) && (
+                    <figcaption className="bg-leaf px-3 py-2 text-center text-sm text-gold">
+                      <p className="font-bold">{item.title}</p>
+                      {item.caption ? <p className="text-cream/80">{item.caption}</p> : null}
+                    </figcaption>
+                  )}
+                </figure>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
+
+      {showWhy ? (
+        <section className="bg-leaf px-4 py-12 text-white">
+          {content.whyTitle ? <h2 className="text-2xl font-extrabold text-gold">{content.whyTitle}</h2> : null}
+          {content.whyItems.length ? (
+            <ul className="mx-auto mt-6 max-w-2xl space-y-3 text-lg">
+              {content.whyItems.map((item, i) => (
+                <li key={`${item}-${i}`} className="rounded-xl bg-white/10 px-4 py-3">
+                  {item}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
+      ) : null}
+
+      {showHelp ? (
+        <section className="bg-gold px-4 py-10">
+          {content.helpTitle ? (
+            <p className="mx-auto max-w-3xl text-lg font-extrabold leading-snug text-leaf-deep md:text-2xl">
+              {content.helpTitle}
+            </p>
+          ) : null}
+          {content.helpSubtitle ? (
+            <p className="mt-3 text-lg font-extrabold text-leaf-deep md:text-2xl">{content.helpSubtitle}</p>
+          ) : null}
+          {content.paymentTitle ? (
+            <p className="mt-3 text-lg font-extrabold text-leaf-deep md:text-2xl">{content.paymentTitle}</p>
+          ) : null}
+          {phones.length ? (
+            <p className="mt-3 space-y-1 text-2xl font-extrabold text-leaf-deep md:text-3xl">
+              {phones.map((phone) => (
+                <a key={phone} href={`tel:${phone.replace(/[\s-]/g, '')}`} className="block">
+                  {phone}
                 </a>
-              )}
-              {(item.title || item.caption) && (
-                <figcaption className="bg-leaf px-3 py-2 text-center text-sm text-gold">
-                  <p className="font-bold">{item.title}</p>
-                  {item.caption ? <p className="text-cream/80">{item.caption}</p> : null}
-                </figcaption>
-              )}
-            </figure>
-          ))}
-        </div>
-      </section>
-
-      <section className="bg-leaf px-4 py-12 text-white">
-        <h2 className="text-2xl font-extrabold text-gold">{content.whyTitle}</h2>
-        <ul className="mx-auto mt-6 max-w-2xl space-y-3 text-lg">
-          {content.whyItems.map((item, i) => (
-            <li key={`${item}-${i}`} className="rounded-xl bg-white/10 px-4 py-3">
-              {item}
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="bg-gold px-4 py-10">
-        <p className="mx-auto max-w-3xl text-lg font-extrabold leading-snug text-leaf-deep md:text-2xl">
-          {content.helpTitle}
-        </p>
-        <p className="mt-3 text-lg font-extrabold text-leaf-deep md:text-2xl">{content.helpSubtitle}</p>
-        <p className="mt-3 space-y-1 text-2xl font-extrabold text-leaf-deep md:text-3xl">
-          {content.paymentNumber
-            .split(/[·,|\n]+/)
-            .map((item) => item.trim())
-            .filter(Boolean)
-            .map((phone) => (
-              <a key={phone} href={`tel:${phone.replace(/[\s-]/g, '')}`} className="block">
-                {phone}
-              </a>
-            ))}
-        </p>
-      </section>
+              ))}
+            </p>
+          ) : null}
+          {content.paymentNote ? (
+            <p className="mx-auto mt-4 max-w-3xl text-base font-semibold text-leaf-deep/80">{content.paymentNote}</p>
+          ) : null}
+        </section>
+      ) : null}
 
       <section className="bg-cream px-4 py-12">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-6 text-3xl font-bold text-leaf">{content.checkoutTitle}</h2>
-          {landingProduct ? (
-            <CheckoutForm
-              alignCenter
-              productTitle={landingProduct.name}
-              products={[{ product: landingProduct, quantity: 1 }]}
-            />
-          ) : (
-            <p>অফার পণ্য পাওয়া যায়নি। হোম পেজ থেকে পণ্য বেছে নিন।</p>
-          )}
+          {content.checkoutTitle ? (
+            <h2 className="mb-6 text-3xl font-bold text-leaf">{content.checkoutTitle}</h2>
+          ) : null}
+          <CheckoutForm
+            alignCenter
+            productTitle={landingProduct.name}
+            billingTitle={content.checkoutBillingTitle}
+            orderTitle={content.checkoutOrderTitle}
+            submitLabel={content.checkoutSubmitLabel}
+            codNote={content.checkoutCodNote}
+            products={[{ product: landingProduct, quantity: 1 }]}
+          />
         </div>
       </section>
     </div>

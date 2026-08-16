@@ -5,7 +5,6 @@ import type { OrderItem, Product } from '@/lib/types'
 import { formatTaka, isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
 import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
-import { DUPLICATE_PRODUCT_UNIT_MESSAGE } from '@/lib/mergeOrder'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackPurchase } from '@/lib/metaPixel'
 
 type Props = {
@@ -15,9 +14,24 @@ type Props = {
   onOrdered?: () => void
   alignCenter?: boolean
   productTitle?: string
+  billingTitle?: string
+  orderTitle?: string
+  submitLabel?: string
+  codNote?: string
 }
 
-export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCenter, productTitle }: Props) {
+export function CheckoutForm({
+  products,
+  catalog,
+  lockItems,
+  onOrdered,
+  alignCenter,
+  productTitle,
+  billingTitle = 'Billing details',
+  orderTitle = 'Your order',
+  submitLabel = 'Place Order',
+  codNote = 'Cash on delivery — পণ্য হাতে পেয়ে টাকা দিবেন।',
+}: Props) {
   const { placeOrder } = useStore()
   const navigate = useNavigate()
   const location = useLocation()
@@ -126,11 +140,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
       onOrdered?.()
       navigate(`/order-success/${order.id}`, { state: { order } })
     } catch (error) {
-      setError(
-        error instanceof Error && error.message === DUPLICATE_PRODUCT_UNIT_MESSAGE
-          ? DUPLICATE_PRODUCT_UNIT_MESSAGE
-          : 'অর্ডার সম্পন্ন হয়নি, আবার চেষ্টা করুন',
-      )
+      setError(error instanceof Error && error.message ? error.message : 'অর্ডার সম্পন্ন হয়নি, আবার চেষ্টা করুন')
     } finally {
       setSubmitting(false)
     }
@@ -144,7 +154,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
       id="order-form"
     >
       <section className={`rounded-3xl bg-white p-6 shadow-sm ${alignCenter ? 'text-center' : ''}`}>
-        <h3 className="mb-5 text-2xl font-bold text-leaf">Billing details</h3>
+        {billingTitle ? <h3 className="mb-5 text-2xl font-bold text-leaf">{billingTitle}</h3> : null}
         {selectable.length > 1 ? (
           <label className="mb-4 block">
             <span className="mb-1 block text-sm font-semibold">পণ্য নির্বাচন করুন *</span>
@@ -236,7 +246,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
       </section>
 
       <section className={`rounded-3xl bg-white p-6 shadow-sm ${alignCenter ? 'text-center' : ''}`}>
-        <h3 className="mb-5 text-2xl font-bold text-leaf">Your order</h3>
+        {orderTitle ? <h3 className="mb-5 text-2xl font-bold text-leaf">{orderTitle}</h3> : null}
         <div className="divide-y divide-leaf/10">
           {lines.map((line) => (
             <div
@@ -286,15 +296,15 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
             <span>মোট</span>
             <span>{formatTaka(total)}</span>
           </div>
-          <p className="rounded-xl bg-leaf-light px-3 py-2 text-leaf">Cash on delivery — পণ্য হাতে পেয়ে টাকা দিবেন।</p>
+          {codNote ? <p className="rounded-xl bg-leaf-light px-3 py-2 text-leaf">{codNote}</p> : null}
         </div>
         {error && <p className="mt-3 text-sm font-semibold text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={submitting}
-          className="mt-6 w-full rounded-xl bg-gold py-4 text-lg font-extrabold text-leaf-deep shadow hover:bg-gold-dark disabled:opacity-60"
+          className="mt-6 mb-16 w-full rounded-xl bg-gold py-4 text-lg font-extrabold text-leaf-deep shadow hover:bg-gold-dark disabled:opacity-60 lg:mb-0"
         >
-          {submitting ? 'অর্ডার হচ্ছে...' : `Place Order ${formatTaka(total)}`}
+          {submitting ? 'অর্ডার হচ্ছে...' : `${submitLabel} ${formatTaka(total)}`}
         </button>
       </section>
     </form>

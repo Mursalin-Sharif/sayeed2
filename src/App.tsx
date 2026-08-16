@@ -17,7 +17,6 @@ import { AdminCustomersPage } from '@/pages/admin/AdminCustomersPage'
 import { AdminMessagesPage } from '@/pages/admin/AdminMessagesPage'
 import { AdminMediaPage } from '@/pages/admin/AdminMediaPage'
 import { AdminLandingPage } from '@/pages/admin/AdminLandingPage'
-import { AdminSitePage } from '@/pages/admin/AdminSitePage'
 import { AdminCarouselPage } from '@/pages/admin/AdminCarouselPage'
 import { AdminAccountPage } from '@/pages/admin/AdminAccountPage'
 
@@ -72,7 +71,7 @@ export default function App() {
           <Route path="messages" element={<AdminMessagesPage />} />
           <Route path="media" element={<AdminMediaPage />} />
           <Route path="landing" element={<AdminLandingPage />} />
-          <Route path="website" element={<AdminSitePage />} />
+          <Route path="website" element={<Navigate to="/admin/landing" replace />} />
           <Route path="carousel" element={<AdminCarouselPage />} />
           <Route path="account" element={<AdminAccountPage />} />
         </Route>

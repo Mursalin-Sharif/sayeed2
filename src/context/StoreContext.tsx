@@ -25,10 +25,9 @@ import {
   cloudDeleteOrder,
   cloudDeleteProduct,
   cloudDeleteSlide,
-  cloudInsertOrder,
+  cloudSaveOrder,
   cloudSaveLanding,
   cloudSaveSite,
-  cloudUpdateOrder,
   cloudUpdateOrderStatus,
   cloudUpsertMedia,
   cloudUpsertProduct,
@@ -38,9 +37,9 @@ import {
   subscribeToOrders,
 } from '@/lib/cloud'
 import { isSupabaseEnabled } from '@/lib/supabase'
-import { applyIncomingOrder, DuplicateProductUnitError, hasSameProductUnitOrder } from '@/lib/mergeOrder'
+import { applyIncomingOrder } from '@/lib/mergeOrder'
 import { readAttribution } from '@/lib/metaPixel'
-import { seedSite } from '@/lib/seed'
+import { normalizeLanding, normalizeSite, seedSite } from '@/lib/seed'
 
 type StoreContextValue = StoreSnapshot & {
   loading: boolean
@@ -65,7 +64,13 @@ type StoreContextValue = StoreSnapshot & {
 const StoreContext = createContext<StoreContextValue | null>(null)
 
 function persist(next: StoreSnapshot) {
-  return saveSnapshot({ ...next, messages: next.messages ?? [], customers: customersFromOrders(next.orders) })
+  return saveSnapshot({
+    ...next,
+    landing: normalizeLanding(next.landing),
+    site: normalizeSite(next.site),
+    messages: next.messages ?? [],
+    customers: customersFromOrders(next.orders),
+  })
 }
 
 function ordersKey(orders: Order[]) {
@@ -74,13 +79,17 @@ function ordersKey(orders: Order[]) {
     .join('|')
 }
 
-function mergeRemoteOrders(prev: StoreSnapshot, remote: Order[]): StoreSnapshot {
+function mergeOrderLists(local: Order[], remote: Order[]) {
   const remoteIds = new Set(remote.map((order) => order.id))
   const cutoff = Date.now() - 90_000
-  const inFlight = prev.orders.filter(
+  const inFlight = local.filter(
     (order) => !remoteIds.has(order.id) && new Date(order.createdAt).getTime() > cutoff,
   )
-  const orders = [...inFlight, ...remote]
+  return [...inFlight, ...remote]
+}
+
+function mergeRemoteOrders(prev: StoreSnapshot, remote: Order[]): StoreSnapshot {
+  const orders = mergeOrderLists(prev.orders, remote)
   if (ordersKey(prev.orders) === ordersKey(orders)) return prev
   return persist({ ...prev, orders })
 }
@@ -113,17 +122,24 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               checkoutTitle: landing.checkoutTitle?.trim() || prev.landing.checkoutTitle,
               helpTitle: landing.helpTitle?.trim() || prev.landing.helpTitle,
               helpSubtitle: landing.helpSubtitle?.trim() || prev.landing.helpSubtitle,
+              paymentTitle: landing.paymentTitle?.trim() || prev.landing.paymentTitle,
+              paymentNote: landing.paymentNote?.trim() || prev.landing.paymentNote,
+              checkoutBillingTitle: landing.checkoutBillingTitle?.trim() || prev.landing.checkoutBillingTitle,
+              checkoutOrderTitle: landing.checkoutOrderTitle?.trim() || prev.landing.checkoutOrderTitle,
+              checkoutSubmitLabel: landing.checkoutSubmitLabel?.trim() || prev.landing.checkoutSubmitLabel,
+              checkoutCodNote: landing.checkoutCodNote?.trim() || prev.landing.checkoutCodNote,
             },
             media: cloud.media.length ? cloud.media : prev.media,
             slides: cloud.slides.length ? cloud.slides : prev.slides,
             messages: cloud.messages.length ? cloud.messages : prev.messages ?? [],
-            site:
+            site: normalizeSite(
               cloud.site &&
-              cloud.site.name === seedSite.name &&
-              cloud.site.phone === seedSite.phone &&
-              cloud.site.slogan === seedSite.slogan
+                cloud.site.name === seedSite.name &&
+                cloud.site.phone === seedSite.phone &&
+                cloud.site.slogan === seedSite.slogan
                 ? prev.site ?? cloud.site
                 : cloud.site ?? prev.site,
+            ),
           })
         })
       })
@@ -226,23 +242,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         campaign: input.campaign || attr.campaign,
       }
       let outcome: ReturnType<typeof applyIncomingOrder> | null = null
-      let duplicate = false
       commit((prev) => {
-        const orders = remote ?? prev.orders
-        if (hasSameProductUnitOrder(orders, payload)) {
-          duplicate = true
-          return prev
-        }
+        const orders = remote ? mergeOrderLists(prev.orders, remote) : prev.orders
         outcome = applyIncomingOrder(orders, payload)
         return { ...prev, orders: outcome.orders }
       })
-      if (duplicate) throw new DuplicateProductUnitError()
       if (!outcome) throw new Error('Order failed')
       const result = outcome as ReturnType<typeof applyIncomingOrder>
-      await sync(async () => {
-        if (result.inserted) await cloudInsertOrder(result.inserted)
-        for (const order of result.updated) await cloudUpdateOrder(order)
-      })
+      await sync(() => cloudSaveOrder(result.saved))
       return result.saved
     },
     [commit, sync],
@@ -362,6 +369,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const value = useMemo<StoreContextValue>(
     () => ({
       ...snapshot,
+      landing: normalizeLanding(snapshot.landing),
+      site: normalizeSite(snapshot.site),
       messages: snapshot.messages ?? [],
       loading,
       cloud: isSupabaseEnabled,
