@@ -3,8 +3,7 @@ import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackViewContent } from '@/lib/metaPixel'
 import { SITE, normalizeLanding } from '@/lib/seed'
-import { formatTaka } from '@/lib/utils'
-import { useEffect, useState, type MouseEvent } from 'react'
+import { useEffect, type MouseEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 
 function youtubeId(url: string) {
@@ -16,6 +15,30 @@ function youtubeId(url: string) {
   if (short) return short[1]
   if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url
   return null
+}
+
+const NUMBER_PREFIX = /^(\d+|[০-৯]+)[.\।)]\s*(.*)$/
+
+type PackageLine =
+  | { kind: 'heading'; text: string }
+  | { kind: 'item'; number: string; title: string; body: string }
+
+function parsePackageLine(line: string, autoNumber?: number): PackageLine {
+  const match = line.match(NUMBER_PREFIX)
+  const rest = match ? match[2] : line
+  const number = match?.[1] ?? (autoNumber != null ? String(autoNumber) : '')
+  if (!number) return { kind: 'heading', text: line }
+
+  const colon = rest.split(/[:：]\s*/)
+  if (colon.length >= 2 && colon[0].trim()) {
+    return { kind: 'item', number, title: colon[0].trim(), body: colon.slice(1).join(': ').trim() }
+  }
+  return { kind: 'item', number, title: rest.trim(), body: '' }
+}
+
+function parsePackageItems(items: string[]): PackageLine[] {
+  const hasManualNumbers = items.some((item) => NUMBER_PREFIX.test(item))
+  return items.map((item, index) => parsePackageLine(item, hasManualNumbers ? undefined : index + 1))
 }
 
 function scrollToOrder(event: MouseEvent<HTMLAnchorElement>) {
@@ -47,15 +70,7 @@ export function LandingPage() {
     products.find((item) => item.id === content.offerProductId) ??
     products.find((item) => item.id === 'prod_offer_pack') ??
     products[0]
-  const photos = offer ? (offer.gallery.length ? offer.gallery : [offer.image]) : []
-  const videos = (media ?? []).filter((item) => item.active && item.type === 'video').sort((a, b) => a.sortOrder - b.sortOrder)
-  const features = content.packageItems.filter(Boolean)
-  const extras = content.whyItems.filter(Boolean)
-  const [active, setActive] = useState(0)
-
-  useEffect(() => {
-    setActive(0)
-  }, [offer?.id])
+  const gallery = (media ?? []).filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
 
   useEffect(() => {
     if (!offer) return
@@ -67,25 +82,37 @@ export function LandingPage() {
     })
   }, [offer])
 
-  if (!offer) {
-    return (
-      <div className="bg-cream px-4 py-20 text-center">
-        <p>অফার পণ্য পাওয়া যায়নি। হোম পেজ থেকে পণ্য বেছে নিন।</p>
-      </div>
-    )
-  }
-
   return (
     <div className="bg-white text-center">
       <section className="bg-leaf px-4 py-14 text-white">
-        <p className="text-sm font-semibold text-gold">{offer.category}</p>
-        <h1 className="mx-auto mt-2 max-w-4xl font-display text-3xl leading-snug md:text-5xl">{offer.name}</h1>
-        <p className="mx-auto mt-4 max-w-3xl text-gold">{offer.headline}</p>
-        <div className="mt-6 flex items-end justify-center gap-3">
-          <span className="text-3xl font-extrabold text-gold md:text-4xl">{formatTaka(offer.price)}</span>
-          {offer.comparePrice ? (
-            <span className="text-lg text-white/50 line-through">{formatTaka(offer.comparePrice)}</span>
-          ) : null}
+        <h1 className="mx-auto max-w-4xl font-display text-3xl leading-snug md:text-5xl">{content.heroTitle}</h1>
+        <p className="mx-auto mt-4 max-w-3xl text-gold">{content.heroSubtitle}</p>
+        <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-4 text-leaf">
+          <h2 className="text-xl font-extrabold md:text-2xl">{content.packageTitle}</h2>
+        </div>
+        <div className="mx-auto mt-8 max-w-2xl space-y-3">
+          {parsePackageItems(content.packageItems).map((item, i) =>
+            item.kind === 'heading' ? (
+              <p
+                key={`heading-${i}`}
+                className={`text-center font-extrabold leading-snug text-gold ${i === 0 ? 'text-2xl md:text-3xl' : 'text-lg text-cream md:text-xl'}`}
+              >
+                {item.text}
+              </p>
+            ) : (
+              <div key={`item-${i}`} className="flex gap-3 rounded-2xl bg-white/10 px-4 py-3 text-left">
+                <span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-gold text-sm font-extrabold text-leaf-deep">
+                  {item.number}
+                </span>
+                <div>
+                  <p className="font-extrabold leading-snug text-gold">{item.title}</p>
+                  {item.body ? (
+                    <p className="mt-1 text-sm font-medium leading-relaxed text-cream/90">{item.body}</p>
+                  ) : null}
+                </div>
+              </div>
+            ),
+          )}
         </div>
         <a
           href="#order-form"
@@ -100,44 +127,23 @@ export function LandingPage() {
       </section>
 
       <section className="px-4 py-12">
-        <div className="mx-auto max-w-xl">
-          <SafeImage
-            src={photos[active] ?? offer.image}
-            alt={offer.name}
-            className="aspect-square w-full rounded-3xl shadow"
-          />
-          {photos.length > 1 ? (
-            <div className="mt-3 flex justify-center gap-2 overflow-x-auto">
-              {photos.map((src, i) => (
-                <button
-                  key={src}
-                  type="button"
-                  onClick={() => setActive(i)}
-                  className={`size-20 overflow-hidden rounded-2xl border-2 ${i === active ? 'border-gold' : 'border-transparent'}`}
-                >
-                  <SafeImage src={src} alt="" className="size-full" />
-                </button>
-              ))}
-            </div>
-          ) : null}
-        </div>
-
-        <h2 className="mx-auto mt-10 mb-6 max-w-4xl rounded-xl bg-leaf py-3 text-xl font-bold text-gold md:text-2xl">
-          {content.storyTitle || offer.name}
+        <h2 className="mx-auto mb-6 max-w-4xl rounded-xl bg-leaf py-3 text-xl font-bold text-gold md:text-2xl">
+          {content.storyTitle}
         </h2>
-        <p className="mx-auto max-w-3xl leading-relaxed">{offer.description}</p>
-        {content.storyBody ? <p className="mx-auto mt-4 max-w-3xl leading-relaxed">{content.storyBody}</p> : null}
-
-        {videos.length ? (
-          <div className="mx-auto mt-10 flex max-w-5xl flex-wrap justify-center gap-4">
-            {videos.map((item) => (
-              <figure key={item.id} className="w-full max-w-sm overflow-hidden rounded-xl border-4 border-gold bg-leaf-deep sm:w-[calc(50%-0.5rem)]">
+        <p className="mx-auto max-w-3xl leading-relaxed">{content.storyBody}</p>
+        <div className="mx-auto mt-10 flex max-w-5xl flex-wrap justify-center gap-4">
+          {gallery.map((item) => (
+            <figure
+              key={item.id}
+              className="w-full max-w-sm overflow-hidden rounded-xl border-4 border-gold bg-leaf-deep sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.7rem)]"
+            >
+              {item.type === 'video' ? (
                 <div className="aspect-video">
                   {youtubeId(item.url) ? (
                     <iframe
                       className="size-full"
                       src={`https://www.youtube.com/embed/${youtubeId(item.url)}`}
-                      title={item.title || offer.name}
+                      title={item.title}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
                     />
@@ -145,43 +151,30 @@ export function LandingPage() {
                     <video src={item.url} controls className="size-full object-cover" />
                   )}
                 </div>
-                {(item.title || item.caption) && (
-                  <figcaption className="bg-leaf px-3 py-2 text-center text-sm text-gold">
-                    <p className="font-bold">{item.title}</p>
-                    {item.caption ? <p className="text-cream/80">{item.caption}</p> : null}
-                  </figcaption>
-                )}
-              </figure>
-            ))}
-          </div>
-        ) : null}
+              ) : (
+                <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
+              )}
+              {(item.title || item.caption) && (
+                <figcaption className="bg-leaf px-3 py-2 text-center text-sm text-gold">
+                  <p className="font-bold">{item.title}</p>
+                  {item.caption ? <p className="text-cream/80">{item.caption}</p> : null}
+                </figcaption>
+              )}
+            </figure>
+          ))}
+        </div>
       </section>
 
-      {features.length ? (
-        <section className="bg-leaf px-4 py-12 text-white">
-          <h2 className="text-2xl font-extrabold text-gold">{content.packageTitle || 'বৈশিষ্ট্য'}</h2>
-          <ol className="mx-auto mt-6 max-w-xl list-none space-y-2 text-lg font-bold text-gold">
-            {features.map((item, i) => (
-              <li key={`${item}-${i}`} className="rounded-xl bg-white/10 px-4 py-3">
-                {i + 1}। {item}
-              </li>
-            ))}
-          </ol>
-        </section>
-      ) : null}
-
-      {extras.length ? (
-        <section className="px-4 py-12">
-          <h2 className="text-2xl font-extrabold text-leaf">{content.whyTitle || 'কেন এই পণ্য?'}</h2>
-          <ul className="mx-auto mt-6 max-w-2xl space-y-3 text-lg">
-            {extras.map((item, i) => (
-              <li key={`${item}-${i}`} className="rounded-xl bg-cream px-4 py-3">
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+      <section className="bg-leaf px-4 py-12 text-white">
+        <h2 className="text-2xl font-extrabold text-gold">{content.whyTitle}</h2>
+        <ul className="mx-auto mt-6 max-w-2xl space-y-3 text-lg">
+          {content.whyItems.map((item, i) => (
+            <li key={`${item}-${i}`} className="rounded-xl bg-white/10 px-4 py-3">
+              {item}
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section className="bg-gold px-4 py-10">
         <p className="mx-auto max-w-3xl text-lg font-extrabold leading-snug text-leaf-deep md:text-2xl">
@@ -200,10 +193,16 @@ export function LandingPage() {
 
       <section className="bg-cream px-4 py-12">
         <div className="mx-auto max-w-6xl">
-          <h2 className="mb-6 text-2xl font-bold leading-snug text-leaf sm:text-3xl">
-            আপনার নাম, ঠিকানা ও মোবাইল নম্বর দিয়ে অর্ডারটি সম্পন্ন করুন
-          </h2>
-          <CheckoutForm alignCenter products={[{ product: offer, quantity: 1 }]} />
+          <h2 className="mb-6 text-3xl font-bold text-leaf">অর্ডার করুন</h2>
+          {offer ? (
+            <CheckoutForm
+              alignCenter
+              catalog={products}
+              products={[{ product: offer, quantity: 1 }]}
+            />
+          ) : (
+            <p>অফার পণ্য পাওয়া যায়নি। হোম পেজ থেকে পণ্য বেছে নিন।</p>
+          )}
         </div>
       </section>
     </div>

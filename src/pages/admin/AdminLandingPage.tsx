@@ -138,6 +138,9 @@ export function AdminLandingPage() {
           onChange={(e) => setForm({ ...form, packageItems: e.target.value.split('\n') })}
           className="mt-1 min-h-40 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
         />
+        <span className="mt-1 block text-xs text-zinc-500">
+          Number a line yourself with 1. 2. 3. — that count is shown on the landing page. Lines without a number show as headings. Use Title: details to split heading and description.
+        </span>
       </label>
       <label className="block text-sm text-zinc-400">
         Story title
