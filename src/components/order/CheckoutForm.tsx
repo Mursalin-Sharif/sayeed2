@@ -142,7 +142,7 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
     >
       <section className={`rounded-3xl bg-white p-6 shadow-sm ${alignCenter ? 'text-center' : ''}`}>
         <h3 className="mb-5 text-2xl font-bold text-leaf">Billing details</h3>
-        {selectable.length > 0 && (
+        {selectable.length > 1 ? (
           <label className="mb-4 block">
             <span className="mb-1 block text-sm font-semibold">পণ্য নির্বাচন করুন *</span>
             <select
@@ -158,7 +158,14 @@ export function CheckoutForm({ products, catalog, lockItems, onOrdered, alignCen
               ))}
             </select>
           </label>
-        )}
+        ) : selectedProduct && !lockItems ? (
+          <div className="mb-4">
+            <span className="mb-1 block text-sm font-semibold">পণ্য নির্বাচন করুন *</span>
+            <p className="w-full rounded-xl border border-leaf/20 bg-cream px-4 py-3 font-semibold text-ink">
+              {selectedProduct.name} — {formatTaka(selectedProduct.price)}
+            </p>
+          </div>
+        ) : null}
         {((products.length === 1 && !lockItems) || selectable.length > 0) ? (
           <label className="mb-4 block">
             <span className="mb-1 block text-sm font-semibold">পরিমাণ</span>
