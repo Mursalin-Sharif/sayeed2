@@ -88,6 +88,7 @@ alter table landing_content add column if not exists checkout_billing_title text
 alter table landing_content add column if not exists checkout_order_title text not null default '';
 alter table landing_content add column if not exists checkout_submit_label text not null default '';
 alter table landing_content add column if not exists checkout_cod_note text not null default '';
+alter table landing_content add column if not exists updated_at timestamptz not null default now();
 
 create table if not exists site_settings (
   id int primary key default 1,

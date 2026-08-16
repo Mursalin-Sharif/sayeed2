@@ -1,7 +1,8 @@
-import type { Customer, Order, StoreSnapshot } from './types'
+import type { Customer, LandingContent, LandingMedia, Order, SiteContent, StoreSnapshot } from './types'
 import { createSeedSnapshot, normalizeLanding, normalizeSite } from './seed'
 
 const KEY = 'js-agro-shop-store-v5'
+const CMS_KEY = 'js-agro-shop-cms-v1'
 
 export function customersFromOrders(orders: Order[]): Customer[] {
   const map = new Map<string, Customer>()
@@ -51,6 +52,7 @@ export function loadSnapshot(): StoreSnapshot {
       site: normalizeSite(parsed.site),
       customers: [],
       messages: parsed.messages ?? seed.messages,
+      cmsUpdatedAt: parsed.cmsUpdatedAt,
     }
     snapshot.customers = customersFromOrders(snapshot.orders)
     snapshot.slides = snapshot.slides.map((slide) => ({
@@ -61,6 +63,13 @@ export function loadSnapshot(): StoreSnapshot {
       ...snapshot.landing,
       heroSubtitle: snapshot.landing.heroSubtitle.replaceAll('৯.৮ হাজার', '২০ হাজার'),
     })
+    const cms = loadCmsBundle()
+    if (cms && (!snapshot.cmsUpdatedAt || cms.cmsUpdatedAt >= snapshot.cmsUpdatedAt)) {
+      snapshot.landing = normalizeLanding(cms.landing)
+      snapshot.site = normalizeSite(cms.site)
+      snapshot.cmsUpdatedAt = cms.cmsUpdatedAt
+      if (cms.media?.length) snapshot.media = cms.media
+    }
     return snapshot
   } catch {
     return createSeedSnapshot()
@@ -74,17 +83,63 @@ export function saveSnapshot(snapshot: StoreSnapshot) {
     site: normalizeSite(snapshot.site),
     messages: snapshot.messages ?? [],
     customers: customersFromOrders(snapshot.orders),
+    cmsUpdatedAt: snapshot.cmsUpdatedAt,
   }
   try {
     localStorage.setItem(KEY, JSON.stringify(next))
   } catch {
     // Keep in-memory changes working even if storage is full.
   }
+  saveCmsBundle(next.landing, next.site, next.media, next.cmsUpdatedAt)
   return next
+}
+
+type CmsBundle = {
+  landing: LandingContent
+  site: SiteContent
+  media?: LandingMedia[]
+  cmsUpdatedAt: string
+}
+
+function loadCmsBundle(): CmsBundle | null {
+  try {
+    const raw = localStorage.getItem(CMS_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<CmsBundle>
+    if (!parsed.landing || !parsed.cmsUpdatedAt) return null
+    return {
+      landing: parsed.landing,
+      site: parsed.site as SiteContent,
+      media: parsed.media,
+      cmsUpdatedAt: parsed.cmsUpdatedAt,
+    }
+  } catch {
+    return null
+  }
+}
+
+function saveCmsBundle(
+  landing: LandingContent,
+  site: SiteContent,
+  media: LandingMedia[],
+  cmsUpdatedAt?: string,
+) {
+  if (!cmsUpdatedAt) return
+  const bundle: CmsBundle = { landing, site, media, cmsUpdatedAt }
+  try {
+    localStorage.setItem(CMS_KEY, JSON.stringify(bundle))
+  } catch {
+    try {
+      localStorage.setItem(CMS_KEY, JSON.stringify({ landing, site, cmsUpdatedAt }))
+    } catch {
+      // Ignore quota errors; in-memory snapshot still holds the save.
+    }
+  }
 }
 
 export function resetSnapshot() {
   localStorage.removeItem(KEY)
+  localStorage.removeItem(CMS_KEY)
   return loadSnapshot()
 }
 

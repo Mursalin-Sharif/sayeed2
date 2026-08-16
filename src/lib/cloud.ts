@@ -98,7 +98,7 @@ function asLanding(row: Record<string, unknown>): LandingContent {
     paymentTitle: String(row.payment_title ?? ''),
     paymentNumber: String(row.payment_number ?? ''),
     paymentNote: String(row.payment_note ?? ''),
-    offerProductId: String(row.offer_product_id ?? 'prod_offer_pack'),
+    offerProductId: String(row.offer_product_id ?? 'prod_landing_offer'),
     offerTitle: String(row.offer_title ?? ''),
     offerPrice: Number(row.offer_price ?? 0),
     offerComparePrice: row.offer_compare_price == null ? null : Number(row.offer_compare_price),
@@ -157,6 +157,9 @@ export async function fetchCloudSnapshot(): Promise<StoreSnapshot | null> {
     site: site.data && !site.error ? asSite(site.data as Record<string, unknown>) : seedSite,
     customers: customersFromOrders(orderList),
     messages: [],
+    cmsUpdatedAt: landing.data
+      ? String((landing.data as Record<string, unknown>).updated_at ?? '')
+      : '',
   }
 }
 
@@ -393,6 +396,7 @@ export async function cloudSaveLanding(landing: LandingContent) {
     checkout_order_title: landing.checkoutOrderTitle ?? '',
     checkout_submit_label: landing.checkoutSubmitLabel ?? '',
     checkout_cod_note: landing.checkoutCodNote ?? '',
+    updated_at: new Date().toISOString(),
   }
   const { error } = await supabase.from('landing_content').upsert(payload)
   if (error && /column/i.test(error.message)) {
@@ -416,6 +420,7 @@ export async function cloudSaveLanding(landing: LandingContent) {
       delete rest.checkout_submit_label
       delete rest.checkout_cod_note
     }
+    if (/updated_at/i.test(error.message)) delete rest.updated_at
     const retry = await supabase.from('landing_content').upsert(rest)
     fail(retry.error)
     return

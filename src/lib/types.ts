@@ -160,4 +160,5 @@ export type StoreSnapshot = {
   site: SiteContent
   customers: Customer[]
   messages: ContactMessage[]
+  cmsUpdatedAt?: string
 }

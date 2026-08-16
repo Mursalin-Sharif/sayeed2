@@ -65,18 +65,16 @@ function trackLandingCheckout(
 }
 
 export function LandingPage() {
-  const { landing, media, products } = useStore()
+  const { landing, media } = useStore()
   const { pathname } = useLocation()
   const content = normalizeLanding(landing)
-  const offer =
-    products.find((item) => item.id === content.offerProductId) ??
-    products.find((item) => item.id === 'prod_offer_pack') ??
-    products[0]
   const gallery = useMemo(() => {
     const list = media ?? []
     const byId = new Map(list.map((item) => [item.id, item]))
     if (content.offerMediaIds.length) {
-      return content.offerMediaIds.map((id) => byId.get(id)).filter((item): item is NonNullable<typeof item> => Boolean(item))
+      return content.offerMediaIds
+        .map((id) => byId.get(id))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item))
     }
     return list.filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
   }, [content.offerMediaIds, media])
@@ -85,40 +83,23 @@ export function LandingPage() {
     gallery[0]?.url ||
     ''
   const landingProduct = useMemo<Product>(() => {
-    const name = content.offerTitle.trim() || offer?.name || content.heroTitle || 'অফার পণ্য'
-    const price = content.offerPrice > 0 ? content.offerPrice : offer?.price ?? 0
-    const comparePrice =
-      content.offerComparePrice && content.offerComparePrice > 0
-        ? content.offerComparePrice
-        : offer?.comparePrice ?? null
-    const image = coverImage || offer?.image || ''
+    const name = content.offerTitle.trim() || content.heroTitle || 'অফার পণ্য'
     return {
-      id: offer?.id || content.offerProductId || 'prod_landing_offer',
+      id: 'prod_landing_offer',
       name,
-      headline: offer?.headline ?? '',
-      description: offer?.description ?? '',
-      price,
-      comparePrice,
-      image,
-      gallery: [
-        ...gallery.filter((item) => item.type === 'image').map((item) => item.url),
-        ...(offer?.gallery ?? []).filter((url) => url && url !== image),
-      ],
-      category: offer?.category ?? 'offer',
-      stock: offer?.stock ?? 99,
+      headline: '',
+      description: '',
+      price: content.offerPrice > 0 ? content.offerPrice : 0,
+      comparePrice:
+        content.offerComparePrice && content.offerComparePrice > 0 ? content.offerComparePrice : null,
+      image: coverImage,
+      gallery: gallery.filter((item) => item.type === 'image').map((item) => item.url),
+      category: 'offer',
+      stock: 99,
       featured: true,
-      createdAt: offer?.createdAt ?? new Date().toISOString(),
+      createdAt: new Date().toISOString(),
     }
-  }, [
-    content.heroTitle,
-    content.offerComparePrice,
-    content.offerPrice,
-    content.offerProductId,
-    content.offerTitle,
-    coverImage,
-    gallery,
-    offer,
-  ])
+  }, [content.heroTitle, content.offerComparePrice, content.offerPrice, content.offerTitle, coverImage, gallery])
 
   useEffect(() => {
     if (!landingProduct) return

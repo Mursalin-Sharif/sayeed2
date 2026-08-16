@@ -392,7 +392,7 @@ export const seedLanding: LandingContent = {
   paymentTitle: 'WhatsApp / Imo',
   paymentNumber: '01813-514791 · 01725-250188',
   paymentNote: 'অর্ডার কনফার্ম করতে WhatsApp বা Imo-তে মেসেজ দিন। সারা দেশে কুরিয়ার/বাস ডেলিভারি।',
-  offerProductId: 'prod_offer_pack',
+  offerProductId: 'prod_landing_offer',
   offerTitle: 'মিয়াজাকি আম (সূর্য ডিম)',
   offerPrice: 850,
   offerComparePrice: null,
@@ -446,10 +446,9 @@ export function normalizeLanding(raw?: Partial<LandingContent> | null): LandingC
     paymentTitle: pickText(src.paymentTitle, base.paymentTitle, true),
     paymentNumber: pickText(src.paymentNumber, base.paymentNumber, true),
     paymentNote: pickText(src.paymentNote, base.paymentNote, true),
-    offerProductId:
-      !src.offerProductId?.trim() || src.offerProductId === 'prod_papaya'
-        ? 'prod_offer_pack'
-        : src.offerProductId.trim(),
+    offerProductId: src.offerProductId?.trim() && src.offerProductId !== 'prod_papaya'
+      ? src.offerProductId.trim()
+      : 'prod_landing_offer',
     offerTitle: pickText(src.offerTitle, base.offerTitle, true),
     offerPrice: Number.isFinite(Number(src.offerPrice)) && Number(src.offerPrice) >= 0 ? Number(src.offerPrice) : 0,
     offerComparePrice:

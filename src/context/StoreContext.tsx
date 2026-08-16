@@ -63,6 +63,15 @@ type StoreContextValue = StoreSnapshot & {
 
 const StoreContext = createContext<StoreContextValue | null>(null)
 
+function mergeById<T extends { id: string }>(remote: T[], local: T[]): T[] {
+  const map = new Map<string, T>()
+  for (const item of remote) map.set(item.id, item)
+  for (const item of local) {
+    if (!map.has(item.id)) map.set(item.id, item)
+  }
+  return [...map.values()]
+}
+
 function persist(next: StoreSnapshot) {
   return saveSnapshot({
     ...next,
@@ -106,6 +115,20 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .then((cloud) => {
         if (cancelled || !cloud?.products.length) return
         setSnapshot((prev) => {
+          const localTs = prev.cmsUpdatedAt || ''
+          const cloudTs = cloud.cmsUpdatedAt || ''
+          const keepLocalCms = Boolean(localTs && (!cloudTs || localTs >= cloudTs))
+          if (keepLocalCms) {
+            return persist({
+              ...cloud,
+              landing: prev.landing,
+              media: prev.media,
+              site: prev.site,
+              cmsUpdatedAt: prev.cmsUpdatedAt,
+              slides: cloud.slides.length ? cloud.slides : prev.slides,
+              messages: cloud.messages.length ? cloud.messages : prev.messages ?? [],
+            })
+          }
           const landing = cloud.landing.heroTitle ? cloud.landing : prev.landing
           return persist({
             ...cloud,
@@ -115,9 +138,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               offerTitle: landing.offerTitle?.trim() || prev.landing.offerTitle || '',
               offerPrice: landing.offerPrice > 0 ? landing.offerPrice : prev.landing.offerPrice || 0,
               offerComparePrice: landing.offerComparePrice ?? prev.landing.offerComparePrice ?? null,
-              offerMediaIds: Array.isArray(landing.offerMediaIds)
-                ? landing.offerMediaIds
-                : prev.landing.offerMediaIds ?? [],
+              offerMediaIds:
+                Array.isArray(landing.offerMediaIds) && landing.offerMediaIds.length
+                  ? landing.offerMediaIds
+                  : prev.landing.offerMediaIds ?? [],
               ctaLabel: landing.ctaLabel?.trim() || prev.landing.ctaLabel,
               checkoutTitle: landing.checkoutTitle?.trim() || prev.landing.checkoutTitle,
               helpTitle: landing.helpTitle?.trim() || prev.landing.helpTitle,
@@ -129,7 +153,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
               checkoutSubmitLabel: landing.checkoutSubmitLabel?.trim() || prev.landing.checkoutSubmitLabel,
               checkoutCodNote: landing.checkoutCodNote?.trim() || prev.landing.checkoutCodNote,
             },
-            media: cloud.media.length ? cloud.media : prev.media,
+            media: mergeById(cloud.media, prev.media),
             slides: cloud.slides.length ? cloud.slides : prev.slides,
             messages: cloud.messages.length ? cloud.messages : prev.messages ?? [],
             site: normalizeSite(
@@ -140,6 +164,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
                 ? prev.site ?? cloud.site
                 : cloud.site ?? prev.site,
             ),
+            cmsUpdatedAt: cloud.cmsUpdatedAt || prev.cmsUpdatedAt,
           })
         })
       })
@@ -202,12 +227,14 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setSnapshot((prev) => persist(updater(prev)))
   }, [])
 
-  const sync = useCallback(async (task: () => Promise<void>) => {
+  const sync = useCallback(async (task: () => Promise<void>, rethrow = false) => {
     try {
       await task()
       setSyncError('')
     } catch (error) {
-      setSyncError(error instanceof Error ? error.message : 'Cloud sync failed')
+      const message = error instanceof Error ? error.message : 'Cloud sync failed'
+      setSyncError(message)
+      if (rethrow) throw new Error(message)
     }
   }, [])
 
@@ -295,39 +322,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [commit, sync],
   )
 
+  const stamp = () => new Date().toISOString()
+
   const saveMedia = useCallback(
     async (item: LandingMedia) => {
       commit((prev) => ({
         ...prev,
+        cmsUpdatedAt: stamp(),
         media: prev.media.some((row) => row.id === item.id)
           ? prev.media.map((row) => (row.id === item.id ? item : row))
           : [...prev.media, item],
       }))
-      await sync(() => cloudUpsertMedia(item))
+      await sync(() => cloudUpsertMedia(item), true)
     },
     [commit, sync],
   )
 
   const deleteMedia = useCallback(
     async (id: string) => {
-      commit((prev) => ({ ...prev, media: prev.media.filter((item) => item.id !== id) }))
-      await sync(() => cloudDeleteMedia(id))
+      commit((prev) => ({
+        ...prev,
+        cmsUpdatedAt: stamp(),
+        media: prev.media.filter((item) => item.id !== id),
+      }))
+      await sync(() => cloudDeleteMedia(id), true)
     },
     [commit, sync],
   )
 
   const saveLanding = useCallback(
     async (landing: LandingContent) => {
-      commit((prev) => ({ ...prev, landing }))
-      await sync(() => cloudSaveLanding(landing))
+      commit((prev) => ({ ...prev, landing, cmsUpdatedAt: stamp() }))
+      await sync(() => cloudSaveLanding(landing), true)
     },
     [commit, sync],
   )
 
   const saveSite = useCallback(
     async (site: SiteContent) => {
-      commit((prev) => ({ ...prev, site }))
-      await sync(() => cloudSaveSite(site))
+      commit((prev) => ({ ...prev, site, cmsUpdatedAt: stamp() }))
+      await sync(() => cloudSaveSite(site), true)
     },
     [commit, sync],
   )

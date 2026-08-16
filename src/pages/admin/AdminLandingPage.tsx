@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, ChevronDown } from 'lucide-react'
 import { useConfirm } from '@/components/admin/ConfirmDialog'
 import { AdminUploadField } from '@/components/admin/AdminUploadField'
 import { ShopSettingsFields } from '@/components/admin/ShopSettingsFields'
@@ -41,7 +41,7 @@ const emptyMedia = {
 }
 
 export function AdminLandingPage() {
-  const { landing, saveLanding, saveSite, site, products, media, saveMedia, deleteMedia } = useStore()
+  const { landing, saveLanding, saveSite, site, media, saveMedia, deleteMedia, syncError } = useStore()
   const confirm = useConfirm()
   const [form, setForm] = useState(() => normalizeLanding(landing))
   const [siteForm, setSiteForm] = useState(() => normalizeSite(site))
@@ -53,14 +53,24 @@ export function AdminLandingPage() {
   const [copied, setCopied] = useState(false)
   const [landingUrl, setLandingUrl] = useState('')
   const sortedMedia = media.slice().sort((a, b) => a.sortOrder - b.sortOrder)
+  const pickedMedia = sortedMedia.filter((item) => form.offerMediaIds.includes(item.id))
+  const landingChoices = pickedMedia.length ? pickedMedia : sortedMedia
+  const landingCoverId = form.offerMediaIds[0] || landingChoices[0]?.id || ''
+  const landingCover = sortedMedia.find((item) => item.id === landingCoverId)
+  const landingPriceLabel = `৳ ${(form.offerPrice || 0).toLocaleString('en-BD')}`
+  const landingKey = JSON.stringify(landing)
+  const siteKey = JSON.stringify(site)
 
   useEffect(() => {
     setForm(normalizeLanding(landing))
-  }, [landing])
+    // Sync only when landing *content* changes, not on every order poll.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [landingKey])
 
   useEffect(() => {
     setSiteForm(normalizeSite(site))
-  }, [site])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [siteKey])
 
   useEffect(() => {
     setLandingUrl(adsUrl())
@@ -80,18 +90,32 @@ export function AdminLandingPage() {
     }))
   }
 
+  function selectLandingCover(id: string) {
+    if (!id) return
+    setForm((prev) => ({
+      ...prev,
+      offerMediaIds: prev.offerMediaIds.includes(id)
+        ? [id, ...prev.offerMediaIds.filter((item) => item !== id)]
+        : [id, ...prev.offerMediaIds],
+    }))
+  }
+
   async function onSaveFile(event: FormEvent) {
     event.preventDefault()
+    if (!upload.url.trim()) {
+      setNotice('Upload a file or paste a URL first, then click Save file.')
+      return
+    }
     setSavingFile(true)
     setNotice('')
     try {
       const item: LandingMedia = { id: editingId ?? uid('media'), ...upload }
       await saveMedia(item)
       const nextIds = form.offerMediaIds.includes(item.id) ? form.offerMediaIds : [...form.offerMediaIds, item.id]
-      const nextForm = normalizeLanding({ ...form, offerMediaIds: nextIds })
+      const nextForm = normalizeLanding({ ...form, offerMediaIds: nextIds, offerProductId: 'prod_landing_offer' })
       setForm(nextForm)
       await saveLanding(nextForm)
-      setNotice(editingId ? 'File updated. It is listed below and on the landing page.' : 'File saved. It is listed below and on the landing page.')
+      setNotice(editingId ? 'File updated. It is listed below — tick it to show on the landing page.' : 'File saved. Tick it below to show on the landing page.')
       resetUpload()
     } catch (error) {
       setNotice(error instanceof Error ? error.message : 'Save failed')
@@ -105,7 +129,7 @@ export function AdminLandingPage() {
     setSaving(true)
     setNotice('')
     try {
-      await saveLanding(normalizeLanding(form))
+      await saveLanding(normalizeLanding({ ...form, offerProductId: 'prod_landing_offer' }))
       await saveSite(normalizeSite(siteForm))
       setNotice('Saved. Open the landing page to see every change.')
     } catch (error) {
@@ -117,15 +141,20 @@ export function AdminLandingPage() {
 
   async function onDelete(item: LandingMedia) {
     if (!(await confirm(`Delete ${item.title || 'this file'}? This cannot be undone.`))) return
-    await deleteMedia(item.id)
-    const nextForm = normalizeLanding({
-      ...form,
-      offerMediaIds: form.offerMediaIds.filter((id) => id !== item.id),
-    })
-    setForm(nextForm)
-    await saveLanding(nextForm)
-    if (editingId === item.id) resetUpload()
-    setNotice('Media deleted.')
+    try {
+      await deleteMedia(item.id)
+      const nextForm = normalizeLanding({
+        ...form,
+        offerMediaIds: form.offerMediaIds.filter((id) => id !== item.id),
+        offerProductId: 'prod_landing_offer',
+      })
+      setForm(nextForm)
+      await saveLanding(nextForm)
+      if (editingId === item.id) resetUpload()
+      setNotice('File deleted.')
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'Delete failed')
+    }
   }
 
   async function copyLandingUrl() {
@@ -154,13 +183,16 @@ export function AdminLandingPage() {
           Open landing page →
         </a>
         {notice ? (
-          <p className={`mt-2 text-sm font-semibold ${notice.toLowerCase().includes('fail') ? 'text-red-400' : 'text-emerald-400'}`}>
+          <p className={`mt-2 text-sm font-semibold ${notice.toLowerCase().includes('fail') || notice.toLowerCase().includes('error') ? 'text-red-400' : 'text-emerald-400'}`}>
             {notice}
           </p>
         ) : null}
+        {syncError ? (
+          <p className="mt-2 text-sm font-semibold text-amber-300">Cloud: {syncError}. Changes are still saved on this device.</p>
+        ) : null}
       </div>
 
-      <form onSubmit={onSaveFile} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+      <form id="upload-file" onSubmit={onSaveFile} className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
         <p className="text-sm font-semibold text-zinc-200">{editingId ? 'Edit photo or video' : 'Upload photo or video'}</p>
         <select
           value={upload.type}
@@ -214,10 +246,10 @@ export function AdminLandingPage() {
       </form>
 
       <form onSubmit={onSaveLanding} className="space-y-4">
-        <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <section id="landing-product" className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
           <p className="text-sm font-semibold text-zinc-200">Landing product — title, price, photos</p>
           <p className="text-xs text-zinc-500">
-            Tick the files saved above, then set price and compare price. Home products stay unchanged.
+            Tick the files to show on /offer. Orders use this title, price and the first ticked photo — not a Home product.
           </p>
 
           <div>
@@ -297,7 +329,7 @@ export function AdminLandingPage() {
                               sortOrder: item.sortOrder,
                               active: item.active,
                             })
-                            window.scrollTo({ top: 0, behavior: 'smooth' })
+                            document.getElementById('upload-file')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
                           }}
                         >
                           Edit
@@ -348,19 +380,44 @@ export function AdminLandingPage() {
             </label>
           </div>
           <label className="block text-sm text-zinc-400">
-            Record orders as this home product
-            <select
-              value={form.offerProductId}
-              onChange={(e) => setForm({ ...form, offerProductId: e.target.value })}
-              className="admin-select mt-1 w-full rounded-xl bg-[#0b1210] px-3 py-3 text-zinc-100"
-            >
-              {products.map((product) => (
-                <option key={product.id} value={product.id}>
-                  {product.name} — home ৳ {product.price.toLocaleString('en-BD')}
-                </option>
-              ))}
-            </select>
+            Landing product
+            <div className="mt-1 flex items-center gap-3 rounded-xl bg-[#0b1210] px-3 py-2">
+              {landingCover?.url && landingCover.type === 'image' ? (
+                <img src={landingCover.url} alt="" className="size-12 shrink-0 rounded-lg object-cover" />
+              ) : (
+                <span className="grid size-12 shrink-0 place-items-center rounded-lg bg-white/10 text-[10px] text-zinc-500">
+                  Photo
+                </span>
+              )}
+              <div className="relative min-w-0 flex-1">
+                <select
+                  value={landingCoverId}
+                  onChange={(e) => selectLandingCover(e.target.value)}
+                  className="admin-select w-full appearance-none rounded-xl bg-transparent py-2 pr-8 text-zinc-100"
+                >
+                  {landingChoices.length ? (
+                    landingChoices.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {(form.offerTitle || item.title || 'Untitled').trim()} — {landingPriceLabel}
+                      </option>
+                    ))
+                  ) : (
+                    <option value="">
+                      {(form.offerTitle || 'Set title and photos above').trim()} — {landingPriceLabel}
+                    </option>
+                  )}
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-1 top-1/2 size-4 -translate-y-1/2 text-zinc-400" />
+              </div>
+            </div>
           </label>
+          <button
+            type="submit"
+            disabled={saving}
+            className="rounded-xl bg-gold px-6 py-3 font-bold text-leaf-deep disabled:opacity-60"
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
         </section>
 
         <section className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
