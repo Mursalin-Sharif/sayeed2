@@ -1,4 +1,4 @@
-import { NavLink, useLocation } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { Home, Phone, ShoppingCart } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
 import { cn } from '@/lib/utils'
@@ -8,29 +8,6 @@ const tabClass =
 
 export function MobileBottomNav() {
   const { count } = useCart()
-  const { pathname } = useLocation()
-  const isLanding = pathname === '/offer' || pathname === '/landing'
-
-  if (isLanding) {
-    return (
-      <nav
-        aria-label="অর্ডার করুন"
-        className="fixed bottom-0 left-0 right-0 z-[1001] lg:hidden"
-        style={{ height: 'calc(55px + env(safe-area-inset-bottom, 0px))' }}
-      >
-        <a
-          href="#order-form"
-          onClick={(event) => {
-            event.preventDefault()
-            document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-          }}
-          className="flex h-full items-center justify-center bg-gold pb-[env(safe-area-inset-bottom,0px)] text-xl font-extrabold text-black shadow-[0_-4px_16px_rgba(0,0,0,0.2)]"
-        >
-          অর্ডার করুন
-        </a>
-      </nav>
-    )
-  }
 
   return (
     <nav

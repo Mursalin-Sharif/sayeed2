@@ -1,6 +1,6 @@
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { Menu, X } from 'lucide-react'
-import { useState, type MouseEvent, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { LogoMark } from '@/components/brand/LogoMark'
 import { MobileBottomNav } from '@/components/layout/MobileBottomNav'
 import { SITE } from '@/lib/seed'
@@ -13,16 +13,9 @@ const links = [
   { to: '/cart', label: 'CART' },
 ]
 
-function scrollToOrder(event: MouseEvent<HTMLAnchorElement>) {
-  event.preventDefault()
-  document.getElementById('order-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-}
-
 export function Layout({ children }: { children: ReactNode }) {
   const { count } = useCart()
-  const { pathname } = useLocation()
   const [open, setOpen] = useState(false)
-  const isLanding = pathname === '/offer' || pathname === '/landing'
 
   return (
     <div className="min-h-svh bg-cream pb-[calc(55px+env(safe-area-inset-bottom,0px))] text-ink lg:pb-0">
@@ -33,52 +26,40 @@ export function Layout({ children }: { children: ReactNode }) {
             <span className="block truncate text-xl font-extrabold leading-none tracking-tight text-leaf sm:text-3xl">{SITE.name}</span>
           </Link>
 
-          {isLanding ? (
-            <a
-              href="#order-form"
-              onClick={scrollToOrder}
-              className="rounded-full bg-gold px-5 py-2.5 text-base font-extrabold text-black shadow-sm hover:bg-gold-dark sm:px-6 sm:text-lg"
-            >
-              অর্ডার করুন
-            </a>
-          ) : (
-            <>
-              <nav className="hidden items-center gap-1 lg:flex">
-                {links.map((link) => (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    className={({ isActive }) =>
-                      cn(
-                        'rounded-full px-4 py-2 text-sm font-bold tracking-wider',
-                        isActive ? 'bg-leaf text-gold' : 'text-leaf hover:bg-leaf-light',
-                      )
-                    }
-                  >
-                    {link.label}
-                    {link.to === '/cart' && count > 0 ? ` (${count})` : ''}
-                  </NavLink>
-                ))}
-                <Link
-                  to="/offer"
-                  className="ml-2 rounded-full bg-gold px-4 py-2 text-sm font-bold text-leaf-deep shadow-sm hover:bg-gold-dark"
-                >
-                  অফার
-                </Link>
-              </nav>
-
-              <button
-                type="button"
-                className="rounded-full border border-leaf/20 p-2 text-leaf lg:hidden"
-                onClick={() => setOpen((v) => !v)}
-                aria-label="মেনু"
+          <nav className="hidden items-center gap-1 lg:flex">
+            {links.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={({ isActive }) =>
+                  cn(
+                    'rounded-full px-4 py-2 text-sm font-bold tracking-wider',
+                    isActive ? 'bg-leaf text-gold' : 'text-leaf hover:bg-leaf-light',
+                  )
+                }
               >
-                {open ? <X className="size-5" /> : <Menu className="size-5" />}
-              </button>
-            </>
-          )}
+                {link.label}
+                {link.to === '/cart' && count > 0 ? ` (${count})` : ''}
+              </NavLink>
+            ))}
+            <Link
+              to="/offer"
+              className="ml-2 rounded-full bg-gold px-4 py-2 text-sm font-bold text-leaf-deep shadow-sm hover:bg-gold-dark"
+            >
+              অফার
+            </Link>
+          </nav>
+
+          <button
+            type="button"
+            className="rounded-full border border-leaf/20 p-2 text-leaf lg:hidden"
+            onClick={() => setOpen((v) => !v)}
+            aria-label="মেনু"
+          >
+            {open ? <X className="size-5" /> : <Menu className="size-5" />}
+          </button>
         </div>
-        {!isLanding && open && (
+        {open && (
           <div className="border-t border-leaf/10 bg-white px-4 py-3 lg:hidden">
             <div className="flex flex-col gap-1">
               {links.map((link) => (

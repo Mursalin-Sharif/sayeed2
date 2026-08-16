@@ -62,29 +62,6 @@ function trackLandingCheckout(
   )
 }
 
-function OrderCta({
-  pathname,
-  offer,
-  className = 'mt-8 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg',
-}: {
-  pathname: string
-  offer: { id: string; name: string; price: number } | undefined
-  className?: string
-}) {
-  return (
-    <a
-      href="#order-form"
-      onClick={(event) => {
-        scrollToOrder(event)
-        trackLandingCheckout(pathname, offer)
-      }}
-      className={className}
-    >
-      অর্ডার করুন
-    </a>
-  )
-}
-
 export function LandingPage() {
   const { landing, media, products } = useStore()
   const { pathname } = useLocation()
@@ -110,14 +87,8 @@ export function LandingPage() {
       <section className="bg-leaf px-4 py-14 text-white">
         <h1 className="mx-auto max-w-4xl font-display text-3xl leading-snug md:text-5xl">{content.heroTitle}</h1>
         <p className="mx-auto mt-4 max-w-3xl text-gold">{content.heroSubtitle}</p>
-        <OrderCta pathname={pathname} offer={offer} />
-        <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-5 text-leaf">
+        <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-4 text-leaf">
           <h2 className="text-xl font-extrabold md:text-2xl">{content.packageTitle}</h2>
-          <OrderCta
-            pathname={pathname}
-            offer={offer}
-            className="mt-4 inline-block rounded-md bg-gold px-8 py-3 text-xl font-extrabold text-black shadow-lg"
-          />
         </div>
         <div className="mx-auto mt-8 max-w-2xl space-y-3">
           {parsePackageItems(content.packageItems).map((item, i) =>
@@ -143,7 +114,16 @@ export function LandingPage() {
             ),
           )}
         </div>
-        <OrderCta pathname={pathname} offer={offer} className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg" />
+        <a
+          href="#order-form"
+          onClick={(event) => {
+            scrollToOrder(event)
+            trackLandingCheckout(pathname, offer)
+          }}
+          className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
+        >
+          অর্ডার করুন
+        </a>
       </section>
 
       <section className="px-4 py-12">
@@ -158,45 +138,21 @@ export function LandingPage() {
               className="w-full max-w-sm overflow-hidden rounded-xl border-4 border-gold bg-leaf-deep sm:w-[calc(50%-0.5rem)] lg:w-[calc(33.333%-0.7rem)]"
             >
               {item.type === 'video' ? (
-                <>
-                  <div className="aspect-video">
-                    {youtubeId(item.url) ? (
-                      <iframe
-                        className="size-full"
-                        src={`https://www.youtube.com/embed/${youtubeId(item.url)}`}
-                        title={item.title}
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    ) : (
-                      <video src={item.url} controls className="size-full object-cover" />
-                    )}
-                  </div>
-                  <a
-                    href="#order-form"
-                    onClick={(event) => {
-                      scrollToOrder(event)
-                      trackLandingCheckout(pathname, offer)
-                    }}
-                    className="block bg-gold py-3 text-lg font-extrabold text-black"
-                  >
-                    অর্ডার করুন
-                  </a>
-                </>
+                <div className="aspect-video">
+                  {youtubeId(item.url) ? (
+                    <iframe
+                      className="size-full"
+                      src={`https://www.youtube.com/embed/${youtubeId(item.url)}`}
+                      title={item.title}
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <video src={item.url} controls className="size-full object-cover" />
+                  )}
+                </div>
               ) : (
-                <a
-                  href="#order-form"
-                  onClick={(event) => {
-                    scrollToOrder(event)
-                    trackLandingCheckout(pathname, offer)
-                  }}
-                  className="block"
-                >
-                  <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
-                  <span className="block bg-gold py-3 text-lg font-extrabold text-black">
-                    অর্ডার করুন
-                  </span>
-                </a>
+                <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
               )}
               {(item.title || item.caption) && (
                 <figcaption className="bg-leaf px-3 py-2 text-center text-sm text-gold">
@@ -207,7 +163,6 @@ export function LandingPage() {
             </figure>
           ))}
         </div>
-        <OrderCta pathname={pathname} offer={offer} className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg" />
       </section>
 
       <section className="bg-leaf px-4 py-12 text-white">
@@ -219,7 +174,6 @@ export function LandingPage() {
             </li>
           ))}
         </ul>
-        <OrderCta pathname={pathname} offer={offer} className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg" />
       </section>
 
       <section className="bg-gold px-4 py-10">
@@ -243,6 +197,7 @@ export function LandingPage() {
           {offer ? (
             <CheckoutForm
               alignCenter
+              catalog={products}
               products={[{ product: offer, quantity: 1 }]}
             />
           ) : (
