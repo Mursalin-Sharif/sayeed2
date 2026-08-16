@@ -1,7 +1,6 @@
 import { NavLink, Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useState } from 'react'
 import {
-  Images,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -27,8 +26,7 @@ const links = [
   { to: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { to: '/admin/customers', label: 'Customers', icon: Users },
   { to: '/admin/messages', label: 'Messages', icon: Mail },
-  { to: '/admin/media', label: 'Landing media', icon: Images },
-  { to: '/admin/landing', label: 'Landing / Pixel', icon: Megaphone },
+  { to: '/admin/landing', label: 'Landing page', icon: Megaphone },
   { to: '/admin/carousel', label: 'Carousel', icon: PanelsTopLeft },
   { to: '/admin/account', label: 'Admin account', icon: UserCog },
 ]

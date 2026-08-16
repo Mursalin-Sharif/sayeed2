@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import {
   ArrowUpRight,
   Banknote,
-  Images,
   Mail,
   Megaphone,
   Package,
@@ -59,8 +58,7 @@ export function AdminDashboardPage() {
     { to: '/admin/products', label: 'Add product', icon: Plus },
     { to: '/admin/orders', label: 'Manage orders', icon: ShoppingBag },
     { to: '/admin/messages', label: unread ? `Inbox (${unread})` : 'Inbox', icon: Mail },
-    { to: '/admin/media', label: 'Landing media', icon: Images },
-    { to: '/admin/landing', label: 'Edit offer page', icon: Megaphone },
+    { to: '/admin/landing', label: 'Edit landing page', icon: Megaphone },
   ]
 
   return (

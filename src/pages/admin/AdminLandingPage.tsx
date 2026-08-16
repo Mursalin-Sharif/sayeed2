@@ -1,6 +1,6 @@
-import { Link } from 'react-router-dom'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Copy, Check } from 'lucide-react'
+import { AdminLandingMedia } from '@/components/admin/AdminLandingMedia'
 import { useStore } from '@/context/StoreContext'
 import { normalizeLanding } from '@/lib/seed'
 
@@ -64,13 +64,77 @@ export function AdminLandingPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="max-w-3xl space-y-4">
-      <h1 className="font-display text-3xl text-gold">Landing page content</h1>
-      {notice ? (
-        <p className={`text-sm font-semibold ${notice.includes('saved') ? 'text-emerald-400' : 'text-red-400'}`}>
-          {notice}
+    <div className="max-w-5xl space-y-6">
+      <div>
+        <h1 className="font-display text-3xl text-gold">Landing page</h1>
+        <p className="mt-1 text-sm text-zinc-400">
+          Title, price, photos, videos and offer text — all here. Home products stay separate.
         </p>
-      ) : null}
+        {notice ? (
+          <p className={`mt-2 text-sm font-semibold ${notice.includes('saved') ? 'text-emerald-400' : 'text-red-400'}`}>
+            {notice}
+          </p>
+        ) : null}
+      </div>
+
+      <form onSubmit={onSubmit} className="space-y-4 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <p className="text-sm font-semibold text-zinc-200">Product title & price</p>
+        <label className="block text-sm text-zinc-400">
+          Product title
+          <input
+            value={form.offerTitle}
+            onChange={(e) => setForm({ ...form, offerTitle: e.target.value })}
+            placeholder="মিয়াজাকি আম (সূর্য ডিম)"
+            className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+          />
+        </label>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <label className="block text-sm text-zinc-400">
+            Landing price (৳)
+            <input
+              type="number"
+              min={0}
+              value={form.offerPrice || ''}
+              onChange={(e) => setForm({ ...form, offerPrice: Number(e.target.value) })}
+              className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+              required
+            />
+          </label>
+          <label className="block text-sm text-zinc-400">
+            Compare price (৳) — optional
+            <input
+              type="number"
+              min={0}
+              value={form.offerComparePrice ?? ''}
+              onChange={(e) =>
+                setForm({ ...form, offerComparePrice: e.target.value === '' ? null : Number(e.target.value) })
+              }
+              className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
+            />
+          </label>
+        </div>
+        <label className="block text-sm text-zinc-400">
+          Record orders as this home product
+          <select
+            value={form.offerProductId}
+            onChange={(e) => setForm({ ...form, offerProductId: e.target.value })}
+            className="admin-select mt-1 w-full rounded-xl bg-[#0b1210] px-3 py-3 text-zinc-100"
+          >
+            {products.map((product) => (
+              <option key={product.id} value={product.id}>
+                {product.name} — home ৳ {product.price.toLocaleString('en-BD')}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button type="submit" disabled={saving} className="rounded-xl bg-gold px-6 py-3 font-bold text-leaf-deep disabled:opacity-60">
+          {saving ? 'Saving...' : 'Save title & price'}
+        </button>
+      </form>
+
+      <AdminLandingMedia />
+
+      <form onSubmit={onSubmit} className="space-y-4">
 
       <section className="rounded-2xl border border-gold/30 bg-gold/10 p-4 space-y-3">
         <p className="text-xs font-semibold tracking-[0.18em] text-gold uppercase">Facebook ads</p>
@@ -199,70 +263,10 @@ export function AdminLandingPage() {
           className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
         />
       </label>
-      <section className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
-        <p className="text-sm font-semibold text-zinc-200">Landing product — separate from Home</p>
-        <p className="text-xs text-zinc-500">
-          Title and price here are only for /offer and /landing. Home page products stay unchanged. Upload landing photos and videos in{' '}
-          <Link to="/admin/media" className="font-semibold text-gold underline">
-            Landing media
-          </Link>
-          .
-        </p>
-        <label className="block text-sm text-zinc-400">
-          Product title
-          <input
-            value={form.offerTitle}
-            onChange={(e) => setForm({ ...form, offerTitle: e.target.value })}
-            placeholder="মিয়াজাকি আম (সূর্য ডিম)"
-            className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
-          />
-        </label>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm text-zinc-400">
-            Landing price (৳)
-            <input
-              type="number"
-              min={0}
-              value={form.offerPrice || ''}
-              onChange={(e) => setForm({ ...form, offerPrice: Number(e.target.value) })}
-              className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
-              required
-            />
-          </label>
-          <label className="block text-sm text-zinc-400">
-            Compare price (৳) — optional
-            <input
-              type="number"
-              min={0}
-              value={form.offerComparePrice ?? ''}
-              onChange={(e) =>
-                setForm({ ...form, offerComparePrice: e.target.value === '' ? null : Number(e.target.value) })
-              }
-              className="mt-1 w-full rounded-xl bg-white/5 px-3 py-3 text-zinc-100"
-            />
-          </label>
-        </div>
-        <label className="block text-sm text-zinc-400">
-          Record orders as this home product
-          <select
-            value={form.offerProductId}
-            onChange={(e) => setForm({ ...form, offerProductId: e.target.value })}
-            className="admin-select mt-1 w-full rounded-xl bg-[#0b1210] px-3 py-3 text-zinc-100"
-          >
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name} — home ৳ {product.price.toLocaleString('en-BD')}
-              </option>
-            ))}
-          </select>
-          <span className="mt-1 block text-xs text-zinc-500">
-            Used only to attach the order. Home price of this product does not change.
-          </span>
-        </label>
-      </section>
       <button type="submit" disabled={saving} className="rounded-xl bg-gold px-6 py-3 font-bold text-leaf-deep disabled:opacity-60">
-        {saving ? 'Saving...' : 'Save'}
+        {saving ? 'Saving...' : 'Save landing text'}
       </button>
     </form>
+    </div>
   )
 }

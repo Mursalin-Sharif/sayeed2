@@ -3,6 +3,7 @@ import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackViewContent } from '@/lib/metaPixel'
 import { SITE, normalizeLanding } from '@/lib/seed'
+import { formatTaka } from '@/lib/utils'
 import { useEffect, useMemo, type MouseEvent } from 'react'
 import { useLocation } from 'react-router-dom'
 
@@ -62,6 +63,29 @@ function trackLandingCheckout(
   )
 }
 
+function OrderCta({
+  pathname,
+  offer,
+  className = 'mt-8 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg',
+}: {
+  pathname: string
+  offer: { id: string; name: string; price: number } | undefined
+  className?: string
+}) {
+  return (
+    <a
+      href="#order-form"
+      onClick={(event) => {
+        scrollToOrder(event)
+        trackLandingCheckout(pathname, offer)
+      }}
+      className={className}
+    >
+      অর্ডার করুন
+    </a>
+  )
+}
+
 export function LandingPage() {
   const { landing, media, products } = useStore()
   const { pathname } = useLocation()
@@ -70,22 +94,29 @@ export function LandingPage() {
     products.find((item) => item.id === content.offerProductId) ??
     products.find((item) => item.id === 'prod_offer_pack') ??
     products[0]
-  const landingProduct = useMemo(
-    () =>
-      offer
-        ? {
-            ...offer,
-            name: content.offerTitle.trim() || offer.name,
-            price: content.offerPrice > 0 ? content.offerPrice : offer.price,
-            comparePrice:
-              content.offerComparePrice && content.offerComparePrice > 0
-                ? content.offerComparePrice
-                : offer.comparePrice,
-          }
-        : undefined,
-    [content.offerComparePrice, content.offerPrice, content.offerTitle, offer],
-  )
+  const packageLines = useMemo(() => parsePackageItems(content.packageItems), [content.packageItems])
+  const featureHeading = packageLines.find((item) => item.kind === 'heading')?.text?.trim() || ''
+  const landingProduct = useMemo(() => {
+    if (!offer) return undefined
+    const name = content.offerTitle.trim() || featureHeading || offer.name
+    const namedMatch = products.find(
+      (item) => item.name === name || (name && item.name.includes(name.slice(0, 8))),
+    )
+    const mangoMatch = /মিয়াজাকি|সূর্য|সুর্য/.test(name)
+      ? products.find((item) => item.id === 'prod_surjodim' || /সুর্য|মিয়াজাকি/.test(item.name))
+      : undefined
+    const price =
+      content.offerPrice > 0 ? content.offerPrice : (namedMatch?.price ?? mangoMatch?.price ?? offer.price)
+    const comparePrice =
+      content.offerComparePrice && content.offerComparePrice > 0
+        ? content.offerComparePrice
+        : namedMatch?.comparePrice ?? mangoMatch?.comparePrice ?? offer.comparePrice
+    return { ...offer, name, price, comparePrice }
+  }, [content.offerComparePrice, content.offerPrice, content.offerTitle, featureHeading, offer, products])
   const gallery = (media ?? []).filter((item) => item.active).sort((a, b) => a.sortOrder - b.sortOrder)
+  const featureLines = packageLines.filter(
+    (item) => !(item.kind === 'heading' && landingProduct && item.text.trim() === landingProduct.name),
+  )
 
   useEffect(() => {
     if (!landingProduct) return
@@ -100,28 +131,27 @@ export function LandingPage() {
   return (
     <div className="bg-white text-center">
       <section className="bg-leaf px-4 py-14 text-white">
-        <h1 className="mx-auto max-w-4xl font-display text-3xl leading-snug md:text-5xl">{content.heroTitle}</h1>
+        <p className="text-sm font-semibold text-gold">{content.heroTitle}</p>
+        <h1 className="mx-auto mt-3 max-w-4xl font-display text-3xl leading-snug md:text-5xl">
+          {landingProduct?.name || content.heroTitle}
+        </h1>
         <p className="mx-auto mt-4 max-w-3xl text-gold">{content.heroSubtitle}</p>
-        <a
-          href="#order-form"
-          onClick={(event) => {
-            scrollToOrder(event)
-            trackLandingCheckout(pathname, landingProduct)
-          }}
-          className="mt-8 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
-        >
-          অর্ডার করুন
-        </a>
+        {landingProduct ? (
+          <div className="mt-6 flex items-end justify-center gap-3">
+            <span className="text-4xl font-extrabold text-gold md:text-5xl">{formatTaka(landingProduct.price)}</span>
+            {landingProduct.comparePrice && landingProduct.comparePrice > landingProduct.price ? (
+              <span className="pb-1 text-lg text-white/50 line-through">{formatTaka(landingProduct.comparePrice)}</span>
+            ) : null}
+          </div>
+        ) : null}
+        <OrderCta pathname={pathname} offer={landingProduct} />
         <div className="mx-auto mt-8 max-w-3xl rounded-2xl bg-white px-6 py-4 text-leaf">
           <h2 className="text-xl font-extrabold md:text-2xl">{content.packageTitle}</h2>
         </div>
         <div className="mx-auto mt-8 max-w-2xl space-y-3">
-          {parsePackageItems(content.packageItems).map((item, i) =>
+          {featureLines.map((item, i) =>
             item.kind === 'heading' ? (
-              <p
-                key={`heading-${i}`}
-                className={`text-center font-extrabold leading-snug text-gold ${i === 0 ? 'text-2xl md:text-3xl' : 'text-lg text-cream md:text-xl'}`}
-              >
+              <p key={`heading-${i}`} className="text-center text-lg font-extrabold leading-snug text-cream md:text-xl">
                 {item.text}
               </p>
             ) : (
@@ -139,16 +169,11 @@ export function LandingPage() {
             ),
           )}
         </div>
-        <a
-          href="#order-form"
-          onClick={(event) => {
-            scrollToOrder(event)
-            trackLandingCheckout(pathname, landingProduct)
-          }}
+        <OrderCta
+          pathname={pathname}
+          offer={landingProduct}
           className="mt-10 inline-block rounded-md bg-gold px-10 py-4 text-2xl font-extrabold text-black shadow-lg"
-        >
-          অর্ডার করুন
-        </a>
+        />
       </section>
 
       <section className="px-4 py-12">
@@ -186,9 +211,7 @@ export function LandingPage() {
                   className="block"
                 >
                   <SafeImage src={item.url} alt={item.title} className="aspect-square w-full object-cover" />
-                  <span className="block bg-gold py-3 text-lg font-extrabold text-black">
-                    অর্ডার করুন
-                  </span>
+                  <span className="block bg-gold py-3 text-lg font-extrabold text-black">অর্ডার করুন</span>
                 </a>
               )}
               {(item.title || item.caption) && (
