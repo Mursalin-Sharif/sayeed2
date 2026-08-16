@@ -5,7 +5,7 @@ import type { OrderItem, Product } from '@/lib/types'
 import { formatTaka, isValidBdPhone, normalizeBdPhone } from '@/lib/utils'
 import { SafeImage } from '@/components/ui/SafeImage'
 import { useStore } from '@/context/StoreContext'
-import { DUPLICATE_PRODUCT_UNIT_MESSAGE } from '@/lib/mergeOrder'
+import { DUPLICATE_PRODUCT_UNIT_MESSAGE, hasSameProductUnitOrder } from '@/lib/mergeOrder'
 import { trackAddToCart, trackInitiateCheckout, trackOnce, trackPurchase } from '@/lib/metaPixel'
 
 type Props = {
@@ -33,7 +33,7 @@ export function CheckoutForm({
   submitLabel = 'Place Order',
   codNote = 'Cash on delivery — পণ্য হাতে পেয়ে টাকা দিবেন।',
 }: Props) {
-  const { placeOrder } = useStore()
+  const { placeOrder, orders } = useStore()
   const navigate = useNavigate()
   const location = useLocation()
   const selectable = catalog?.length ? catalog : []
@@ -119,14 +119,20 @@ export function CheckoutForm({
         price: line.product.price,
         quantity: line.quantity,
       }))
-      const order = await placeOrder({
+      const checkout = {
         items,
         customerName: name,
         phone: normalizeBdPhone(phone),
         address,
         district,
         shippingType: shipping,
-      })
+      }
+      if (hasSameProductUnitOrder(orders, checkout)) {
+        setError(DUPLICATE_PRODUCT_UNIT_MESSAGE)
+        setSubmitting(false)
+        return
+      }
+      const order = await placeOrder(checkout)
       markCheckoutStarted()
       trackPurchase({
         id: order.id,

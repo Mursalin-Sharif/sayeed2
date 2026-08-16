@@ -33,9 +33,19 @@ function asProduct(row: Record<string, unknown>): Product {
 }
 
 export function asOrder(row: Record<string, unknown>): Order {
+  const rawItems = Array.isArray(row.items) ? row.items : []
   return {
     id: String(row.id),
-    items: Array.isArray(row.items) ? (row.items as Order['items']) : [],
+    items: rawItems.map((item) => {
+      const rowItem = item as Record<string, unknown>
+      return {
+        productId: String(rowItem.productId ?? rowItem.product_id ?? ''),
+        name: String(rowItem.name ?? ''),
+        image: String(rowItem.image ?? ''),
+        price: Number(rowItem.price ?? 0),
+        quantity: Number(rowItem.quantity ?? 0),
+      }
+    }),
     customerName: String(row.customer_name),
     phone: String(row.phone),
     address: String(row.address),

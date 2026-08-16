@@ -88,6 +88,12 @@ function ordersKey(orders: Order[]) {
     .join('|')
 }
 
+function uniqueOrders(orders: Order[]) {
+  const map = new Map<string, Order>()
+  for (const order of orders) map.set(order.id, order)
+  return [...map.values()]
+}
+
 function mergeOrderLists(local: Order[], remote: Order[]) {
   const remoteIds = new Set(remote.map((order) => order.id))
   const cutoff = Date.now() - 90_000
@@ -262,7 +268,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const placeOrder = useCallback(
     async (input: CheckoutInput) => {
       const attr = readAttribution()
-      const remote = await fetchCloudOrders()
+      let remote: Order[] | null = null
+      try {
+        remote = await fetchCloudOrders()
+      } catch {
+        remote = null
+      }
       const payload = {
         ...input,
         source: input.source || attr.source,
@@ -271,12 +282,13 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       let outcome: ReturnType<typeof applyIncomingOrder> | null = null
       let duplicate = false
       commit((prev) => {
-        const orders = remote ? mergeOrderLists(prev.orders, remote) : prev.orders
-        if (hasSameProductUnitOrder(orders, payload)) {
+        const merged = remote ? mergeOrderLists(prev.orders, remote) : prev.orders
+        const combined = uniqueOrders([...prev.orders, ...merged, ...(remote ?? [])])
+        if (hasSameProductUnitOrder(combined, payload)) {
           duplicate = true
           return prev
         }
-        outcome = applyIncomingOrder(orders, payload)
+        outcome = applyIncomingOrder(merged, payload)
         return { ...prev, orders: outcome.orders }
       })
       if (duplicate) throw new DuplicateProductUnitError()

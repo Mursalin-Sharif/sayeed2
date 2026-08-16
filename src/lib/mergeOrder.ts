@@ -11,6 +11,24 @@ function normText(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
+function qtyOf(value: unknown) {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : 0
+}
+
+function sameProduct(existing: OrderItem, incoming: OrderItem) {
+  const idA = String(existing.productId ?? '').trim()
+  const idB = String(incoming.productId ?? '').trim()
+  if (idA && idB && idA === idB) return true
+  const nameA = normText(String(existing.name ?? ''))
+  const nameB = normText(String(incoming.name ?? ''))
+  return Boolean(nameA && nameB && nameA === nameB)
+}
+
+function sameProductUnit(existing: OrderItem, incoming: OrderItem) {
+  return sameProduct(existing, incoming) && qtyOf(existing.quantity) === qtyOf(incoming.quantity)
+}
+
 function isOpenOrder(order: Order) {
   return order.status === 'pending'
 }
@@ -108,14 +126,13 @@ export class DuplicateProductUnitError extends Error {
 export function hasSameProductUnitOrder(orders: Order[], input: CheckoutInput) {
   const phone = normalizeBdPhone(input.phone)
   const name = normText(input.customerName)
+  if (!phone || !name) return false
   return orders.some((order) => {
     if (order.status === 'cancelled') return false
     if (normalizeBdPhone(order.phone) !== phone) return false
     if (normText(order.customerName) !== name) return false
-    return input.items.some((incoming) =>
-      order.items.some(
-        (existing) => existing.productId === incoming.productId && existing.quantity === incoming.quantity,
-      ),
+    return (order.items ?? []).some((existing) =>
+      input.items.some((incoming) => sameProductUnit(existing, incoming)),
     )
   })
 }
@@ -127,8 +144,13 @@ export function applyIncomingOrder(orders: Order[], input: CheckoutInput) {
   const target = orders.find(
     (order) => isOpenOrder(order) && sameBuyer(order, name, phone, input.district),
   )
+  const sameProductOnPending =
+    target &&
+    input.items.some((incoming) => target.items.some((existing) => sameProduct(existing, incoming)))
 
-  if (target) {
+  // Same product + same units is blocked before this runs. Same product + different
+  // units must be a new order, not a quantity merge — otherwise it looks like a 2nd place.
+  if (target && !sameProductOnPending) {
     const mergedItems = addItems(target.items, input.items)
     const totals = money(mergedItems, target.shippingFee)
     const patched: Order = {
